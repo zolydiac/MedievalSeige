@@ -4,21 +4,25 @@
 public class FPSController : MonoBehaviour
 {
     [Header("Movement Settings")]
-    [SerializeField] private float walkSpeed = 5f;
-    [SerializeField] private float sprintSpeed = 8f;
-    [SerializeField] private float crouchSpeed = 2.5f;
-    [SerializeField] private float jumpHeight = 1.2f;
-    [SerializeField] private float gravity = -35f;
+    [SerializeField] private float walkSpeed = 6f;
+    [SerializeField] private float sprintSpeed = 10f;
+    [SerializeField] private float crouchSpeed = 3f;
+    [SerializeField] private float jumpHeight = 1.5f;
+    [SerializeField] private float gravity = -20f;
+    [SerializeField] private float acceleration = 10f;
+    [SerializeField] private float deceleration = 10f;
+    [SerializeField] private float airControl = 0.3f;
 
     [Header("Gravity Multipliers")]
-    [SerializeField] private float gravityMultiplierFalling = 3.5f;
+    [SerializeField] private float gravityMultiplierFalling = 2f;
     [SerializeField] private float gravityMultiplierRising = 1.0f;
-    [SerializeField] private float gravityMultiplierJumpCancel = 2f;
+    [SerializeField] private float gravityMultiplierJumpCancel = 2.5f;
 
     [Header("Look Settings")]
     [SerializeField] private Transform cameraTransform;
     [SerializeField] private float mouseSensitivity = 2f;
     [SerializeField] private float lookXLimit = 90f;
+    [SerializeField] private float lookSmoothing = 10f;
 
     [Header("Ground Check")]
     [SerializeField] private Transform groundCheck;
@@ -36,14 +40,16 @@ public class FPSController : MonoBehaviour
 
     private CharacterController controller;
     private Vector3 velocity;
+    private Vector3 currentMoveVelocity;
     private bool isGrounded;
     private float cameraPitch = 0f;
+    private float targetCameraPitch = 0f;
 
     // Jump Fix Variables
     private float lastGroundedTime = 0f;
     private float groundedGracePeriod = 0.15f;
     private float lastJumpTime = -999f;
-    private float jumpCooldown = 0.25f;
+    private float jumpCooldown = 0.2f;
 
     void Start()
     {
@@ -69,7 +75,8 @@ public class FPSController : MonoBehaviour
         HandleJump();
         ApplyGravity();
 
-        controller.Move(velocity * Time.deltaTime);
+        Vector3 finalMove = currentMoveVelocity + new Vector3(0, velocity.y, 0);
+        controller.Move(finalMove * Time.deltaTime);
 
         HandleCursor();
     }
@@ -80,7 +87,7 @@ public class FPSController : MonoBehaviour
 
         if (isGrounded && velocity.y < 0)
         {
-            velocity.y = -5f; // Hard stick to the ground
+            velocity.y = -2f; // Lighter ground stick for smoother feel
             lastGroundedTime = Time.time;
         }
     }
@@ -117,13 +124,25 @@ public class FPSController : MonoBehaviour
         if (Input.GetKey(keyForward)) vertical = 1f;
         if (Input.GetKey(keyBack)) vertical = -1f;
 
-        Vector3 move = transform.right * horizontal + transform.forward * vertical;
+        Vector3 inputDir = new Vector3(horizontal, 0, vertical).normalized;
+        Vector3 targetMove = transform.right * inputDir.x + transform.forward * inputDir.z;
 
-        float speed = walkSpeed;
-        if (Input.GetKey(keySprint)) speed = sprintSpeed;
-        if (Input.GetKey(keyCrouch)) speed = crouchSpeed;
+        float targetSpeed = walkSpeed;
+        if (Input.GetKey(keySprint)) targetSpeed = sprintSpeed;
+        if (Input.GetKey(keyCrouch)) targetSpeed = crouchSpeed;
 
-        controller.Move(move * speed * Time.deltaTime);
+        Vector3 targetVelocity = targetMove * targetSpeed;
+
+        // Smooth acceleration/deceleration
+        float accelRate = (inputDir.magnitude > 0) ? acceleration : deceleration;
+        
+        // Reduce control in air
+        if (!isGrounded)
+        {
+            accelRate *= airControl;
+        }
+
+        currentMoveVelocity = Vector3.Lerp(currentMoveVelocity, targetVelocity, accelRate * Time.deltaTime);
     }
 
     void HandleMouseLook()
@@ -131,10 +150,13 @@ public class FPSController : MonoBehaviour
         float mx = Input.GetAxis("Mouse X") * mouseSensitivity;
         float my = Input.GetAxis("Mouse Y") * mouseSensitivity;
 
+        // Smooth horizontal rotation
         transform.Rotate(Vector3.up * mx);
 
-        cameraPitch -= my;
-        cameraPitch = Mathf.Clamp(cameraPitch, -lookXLimit, lookXLimit);
+        // Smooth vertical look
+        targetCameraPitch -= my;
+        targetCameraPitch = Mathf.Clamp(targetCameraPitch, -lookXLimit, lookXLimit);
+        cameraPitch = Mathf.Lerp(cameraPitch, targetCameraPitch, lookSmoothing * Time.deltaTime);
         cameraTransform.localRotation = Quaternion.Euler(cameraPitch, 0f, 0f);
     }
 
