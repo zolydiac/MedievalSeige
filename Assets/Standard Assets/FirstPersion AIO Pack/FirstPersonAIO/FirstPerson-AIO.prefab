@@ -94,7 +94,7 @@ Camera:
   m_NormalizedViewPortRect:
     serializedVersion: 2
     x: 0
-    y: 0
+    y: 0.5
     width: 1
     height: 1
   near clip plane: 0.01
@@ -124,7 +124,7 @@ AudioListener:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1264833946912854}
-  m_Enabled: 1
+  m_Enabled: 0
 --- !u!124 &124044488792268592
 Behaviour:
   m_ObjectHideFlags: 0

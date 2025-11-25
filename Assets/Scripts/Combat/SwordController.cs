@@ -6,27 +6,21 @@ public class SwordController : MonoBehaviour
 
     void Start()
     {
-        // Auto-find the sword damage script
         if (swordDamage == null)
         {
             swordDamage = GetComponentInChildren<SwordDamage>();
         }
     }
 
-    // These are called by Animation Events
+    // These are called by Animation Events on the attack animation
+
     public void EnableDamage()
     {
-        if (swordDamage != null)
-        {
-            swordDamage.EnableDamage();
-        }
+        swordDamage?.EnableDamage();
     }
 
     public void DisableDamage()
     {
-        if (swordDamage != null)
-        {
-            swordDamage.DisableDamage();
-        }
+        swordDamage?.DisableDamage();
     }
 }
