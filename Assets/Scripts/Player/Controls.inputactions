@@ -37,6 +37,15 @@
                     "name": "Sprint",
                     "type": "Button",
                     "id": "51c34a21-05f4-40e6-a7b0-39f47e72e0ad",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "attack",
+                    "type": "Button",
+                    "id": "b4e0ba8c-dc52-4d0a-a902-91139ce33cff",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -70,7 +79,7 @@
                     "name": "",
                     "id": "8d7bda23-a1b5-4ba1-87f8-3f2a093543aa",
                     "path": "<Keyboard>/shift",
-                    "interactions": "",
+                    "interactions": "Hold",
                     "processors": "",
                     "groups": "",
                     "action": "Sprint",
@@ -131,6 +140,17 @@
                     "action": "Move",
                     "isComposite": false,
                     "isPartOfComposite": true
+                },
+                {
+                    "name": "",
+                    "id": "4d7bdc0d-8313-4335-895b-9ed763869c9b",
+                    "path": "<Mouse>/leftButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "attack",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
             ]
         },
@@ -169,6 +189,15 @@
                     "name": "Sprint",
                     "type": "Button",
                     "id": "83d4d6c5-a4d4-40b5-b72d-c736eb30bdae",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "attack",
+                    "type": "Button",
+                    "id": "eb7b9f25-3177-4913-b593-9219694a87ff",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -191,7 +220,7 @@
                     "name": "",
                     "id": "8b683992-2b34-4e5c-9f16-1dc5fc368aa0",
                     "path": "<Gamepad>/leftStickPress",
-                    "interactions": "",
+                    "interactions": "Hold",
                     "processors": "",
                     "groups": "",
                     "action": "Sprint",
@@ -307,6 +336,17 @@
                     "action": "Look",
                     "isComposite": false,
                     "isPartOfComposite": true
+                },
+                {
+                    "name": "",
+                    "id": "8360dbef-be7a-4d50-b22b-f37f9c634db1",
+                    "path": "<Gamepad>/rightTrigger",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "attack",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
             ]
         }

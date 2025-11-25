@@ -22,13 +22,13 @@ public class PlayerHealth : MonoBehaviour
 
         currentHealth -= damage;
         currentHealth = Mathf.Max(currentHealth, 0);
-
-        Debug.Log("Player took " + damage + " damage. Health: " + currentHealth);
+        Debug.Log(gameObject.name + " took " + damage + " damage. Health: " + currentHealth);
 
         // Update UI (we'll add this later)
 
         if (currentHealth <= 0)
         {
+            Debug.Log(gameObject.name + " health reached 0, calling Die()");
             Die();
         }
     }
@@ -37,34 +37,41 @@ public class PlayerHealth : MonoBehaviour
     {
         currentHealth += amount;
         currentHealth = Mathf.Min(currentHealth, maxHealth);
-
         Debug.Log("Player healed " + amount + ". Health: " + currentHealth);
     }
 
     void Die()
     {
-        if (isDead) return; // Prevent multiple calls
-
+        if (isDead) return;
         isDead = true;
-        Debug.Log("Player died!");
+        Debug.Log(gameObject.name + " DIE() CALLED - Setting IsDead animation parameter");
 
-        // Disable movement (but keep camera!)
-        FPSController controller = GetComponent<FPSController>();
+        // Trigger death animation
+        Animator animator = GetComponent<Animator>();
+        if (animator == null)
+        {
+            animator = GetComponentInChildren<Animator>();
+            Debug.Log("Looking for animator in children");
+        }
+
+        if (animator != null)
+        {
+            Debug.Log("Found animator, setting IsDead to true");
+            animator.SetBool("IsDead", true);
+        }
+        else
+        {
+            Debug.LogError("ERROR: No Animator found!");
+        }
+
+        // Disable movement controller (but keep camera!)
+        SplitScreenFPSController controller = GetComponent<SplitScreenFPSController>();
         if (controller != null)
         {
             controller.enabled = false;
         }
 
-        // DON'T disable the entire Player object
-        // DON'T destroy the Player
-        // Just disable movement
-
-        // Show death UI (we'll add this later)
-        // For now, just log it
         Debug.Log("GAME OVER - Player is dead");
-
-        // Optional: Restart after delay
-        // Invoke("RestartLevel", 3f);
     }
 
     // Public getters
