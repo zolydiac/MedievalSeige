@@ -1,16 +1,25 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Collider))]
 public class SwordDamage : MonoBehaviour
 {
-    [Header("Damage Settings")]
+    [Header("Damage")]
     [SerializeField] private int damage = 20;
 
-    [Tooltip("Which LAYER this sword is allowed to damage (e.g. 'Player2' on Player1's sword).")]
+    [Tooltip("Which LAYER this sword is allowed to damage (ex: 'Player2' for Player1 sword).")]
     [SerializeField] private string enemyLayer = "Player2";
 
-    private bool canDamage = false;
+    [Header("Debug")]
+    [SerializeField] private bool showDebugLogs = false;
+
+    private bool damageActive = false;
     private Collider swordCollider;
+
+    // Tracks which targets we've damaged this swing
+    private readonly HashSet<PlayerHealth> damagedThisSwing = new HashSet<PlayerHealth>();
+
+    private int enemyLayerIndex;
 
     void Awake()
     {
@@ -18,69 +27,59 @@ public class SwordDamage : MonoBehaviour
 
         if (!swordCollider.isTrigger)
         {
-            Debug.LogWarning($"{name}: Sword collider should be set to IsTrigger = true.", this);
+            Debug.LogWarning($"{name}: Sword collider MUST be set to IsTrigger = TRUE.");
+        }
+
+        enemyLayerIndex = LayerMask.NameToLayer(enemyLayer);
+        if (enemyLayerIndex == -1)
+        {
+            Debug.LogError($"{name}: Enemy layer '{enemyLayer}' does NOT exist! Fix in Inspector.");
         }
     }
 
-    // Called by SwordController via animation events
+    // Called by animation event at start of hit window
     public void EnableDamage()
     {
-        canDamage = true;
-        // Debug.Log($"{name}: Damage ENABLED");
+        damageActive = true;
+        damagedThisSwing.Clear();
+
+        if (showDebugLogs)
+            Debug.Log($"{name}: Damage ENABLED — starting new swing window.");
     }
 
+    // Called by animation event at end of hit window
     public void DisableDamage()
     {
-        canDamage = false;
-        // Debug.Log($"{name}: Damage DISABLED");
+        damageActive = false;
+
+        if (showDebugLogs)
+            Debug.Log($"{name}: Damage DISABLED — swing ended.");
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        Debug.Log($"{name}: Trigger hit {other.name} on layer {LayerMask.LayerToName(other.gameObject.layer)}");
-
-        if (!canDamage)
-        {
-            Debug.Log($"{name}: Damage is currently disabled (animation window not in hit frames).");
+        if (!damageActive)
             return;
-        }
 
-        // Check layer filter
-        if (!string.IsNullOrEmpty(enemyLayer))
-        {
-            int expectedLayer = LayerMask.NameToLayer(enemyLayer);
-            if (other.gameObject.layer != expectedLayer)
-            {
-                Debug.Log($"{name}: Wrong layer. Expected {enemyLayer}, got {LayerMask.LayerToName(other.gameObject.layer)}.");
-                return;
-            }
-        }
+        // Layer check
+        if (other.gameObject.layer != enemyLayerIndex)
+            return;
 
-        // Try to find a PlayerHealth on this object or its parents
-        PlayerHealth health = other.GetComponentInParent<PlayerHealth>();
-        if (health != null)
-        {
-            Debug.Log($"{name}: Dealing {damage} damage to {other.name}");
-            health.TakeDamage(damage);
-        }
-        else
-        {
-            Debug.LogWarning($"{name}: Hit {other.name} but no PlayerHealth found in parents.");
-        }
+        // Try to find PlayerHealth on target
+        PlayerHealth target = other.GetComponentInParent<PlayerHealth>();
+        if (target == null)
+            return;
+
+        // Prevent double hits on same target this swing
+        if (damagedThisSwing.Contains(target))
+            return;
+
+        damagedThisSwing.Add(target);
+
+        // Apply damage
+        target.TakeDamage(damage);
+
+        if (showDebugLogs)
+            Debug.Log($"{name}: Hit {other.name} for {damage} damage.");
     }
-    void Update()
-{
-    // TEMPORARY TEST - Remove after fixing animation events
-    if (Input.GetKeyDown(KeyCode.T))
-    {
-        EnableDamage();
-        Debug.Log("Manually enabled damage for testing");
-    }
-    
-    if (Input.GetKeyDown(KeyCode.Y))
-    {
-        DisableDamage();
-        Debug.Log("Manually disabled damage");
-    }
-}
 }

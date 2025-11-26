@@ -37,9 +37,9 @@
                     "name": "Sprint",
                     "type": "Button",
                     "id": "51c34a21-05f4-40e6-a7b0-39f47e72e0ad",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
                     "processors": "",
-                    "interactions": "",
+                    "interactions": "Hold",
                     "initialStateCheck": false
                 },
                 {
@@ -55,6 +55,15 @@
                     "name": "ToggleView",
                     "type": "Button",
                     "id": "3d87f032-410a-442e-859a-755b1ba00350",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Crouch",
+                    "type": "Button",
+                    "id": "da1c3488-947e-462a-8613-c7f1044cb88d",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -88,7 +97,7 @@
                     "name": "",
                     "id": "8d7bda23-a1b5-4ba1-87f8-3f2a093543aa",
                     "path": "<Keyboard>/shift",
-                    "interactions": "Hold",
+                    "interactions": "Hold(duration=0.5,pressPoint=0.5)",
                     "processors": "",
                     "groups": "",
                     "action": "Sprint",
@@ -171,6 +180,17 @@
                     "action": "ToggleView",
                     "isComposite": false,
                     "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "687468bf-6069-4971-9bd3-bd1f8b6b215f",
+                    "path": "<Keyboard>/leftCtrl",
+                    "interactions": "Press(behavior=2)",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Crouch",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
             ]
         },
@@ -227,6 +247,15 @@
                     "name": "ToggleView",
                     "type": "Button",
                     "id": "39a11b81-8b9c-41aa-b17a-0cc1da1e2544",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Coruch",
+                    "type": "Button",
+                    "id": "98383a33-00e2-4b47-bd44-d3bde89f70c5",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -385,6 +414,17 @@
                     "processors": "",
                     "groups": ";Gamepad",
                     "action": "ToggleView",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "784a48af-59d5-4721-b026-dc5073a15bff",
+                    "path": "<Gamepad>/buttonEast",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Coruch",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

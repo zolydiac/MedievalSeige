@@ -11,15 +11,18 @@ public class SplitScreenFPSController : MonoBehaviour
     [Header("Movement Settings")]
     [SerializeField] private float walkSpeed = 6f;
     [SerializeField] private float sprintSpeed = 10f;
+    [SerializeField] private float crouchSpeed = 3f;
     [SerializeField] private float jumpHeight = 1.5f;
     [SerializeField] private float gravity = -20f;
 
+    [Header("Crouch Settings")]
+    [SerializeField] private float crouchHeight = 1f;
+    private float originalHeight;
+    private float originalCenterY;
+
     [Header("Movement Smoothing")]
-    [Tooltip("How quickly horizontal movement changes while grounded (lower = snappier).")]
     [SerializeField] private float groundedSmoothTime = 0.08f;
-    [Tooltip("How quickly horizontal movement changes in the air.")]
     [SerializeField] private float airSmoothTime = 0.2f;
-    [Tooltip("Air control factor (0-1). Lower = less control in air.")]
     [SerializeField] private float airControl = 0.3f;
 
     [Header("Gravity Multipliers")]
@@ -40,64 +43,57 @@ public class SplitScreenFPSController : MonoBehaviour
     [SerializeField] private float groundCheckDistance = 0.3f;
 
     [Header("View Mode")]
-    [Tooltip("Start in third person instead of first person.")]
     [SerializeField] private bool startInThirdPerson = true;
-    [Tooltip("Local camera position relative to player in first-person mode.")]
     [SerializeField] private Vector3 firstPersonOffset = new Vector3(0f, 0.6f, 0f);
-    [Tooltip("Distance of third-person camera behind the player.")]
     [SerializeField] private float thirdPersonDistance = 4f;
-    [Tooltip("Height of third-person camera pivot above player origin.")]
     [SerializeField] private float thirdPersonHeight = 1.6f;
-    [Tooltip("Side offset (shoulder view). Positive = right shoulder.")]
     [SerializeField] private float thirdPersonSideOffset = 0.6f;
-    [Tooltip("Layers the camera collides with.")]
     [SerializeField] private LayerMask cameraCollisionMask;
-    [Tooltip("Radius of the camera collision sphere.")]
     [SerializeField] private float cameraCollisionRadius = 0.2f;
 
     [Header("Animation")]
     [SerializeField] private Animator animator;
-    [Tooltip("Trigger name used by the jump animation (e.g. 'Jump').")]
-    [SerializeField] private string jumpTriggerName = "Jump";
 
     // Input
     private Vector2 moveInput;
     private Vector2 lookInput;
     private bool jumpRequested = false;
     private bool sprintPressed = false;
+    private bool crouchPressed = false;
     private bool attackPressed = false;
 
     // Components
     private CharacterController controller;
 
     // Movement state
-    private Vector3 velocity;               // vertical velocity stored in .y
-    private Vector3 currentMoveVelocity;    // horizontal movement
+    private Vector3 velocity;
+    private Vector3 currentMoveVelocity;
     private bool isGrounded;
+    private bool wasGrounded;
 
     // Look state
     private float cameraPitch;
     private float targetCameraPitch;
 
-    // Jump timings
     [Header("Jump Timing")]
-    [Tooltip("Minimum time between jumps (seconds). Tiny delay between jumps.")]
     [SerializeField] private float jumpCooldown = 0.2f;
-    [Tooltip("Allow a short time to still jump after leaving ground.")]
     [SerializeField] private float coyoteTime = 0.12f;
 
     private float lastJumpTime = -999f;
     private float lastGroundedTime = 0f;
 
-    // Input device
-    private bool isUsingGamepad = false;
+    private float currentAnimSpeed = 0f;
+    [Header("Animation Smoothing")]
+    [SerializeField] private float animSpeedSmoothTime = 0.15f;
 
-    // View mode
+    private bool isUsingGamepad = false;
     private bool isThirdPerson;
 
     void Start()
     {
         controller = GetComponent<CharacterController>();
+        originalHeight = controller.height;
+        originalCenterY = controller.center.y;
 
         if (animator == null)
             animator = GetComponent<Animator>();
@@ -141,6 +137,8 @@ public class SplitScreenFPSController : MonoBehaviour
 
     void Update()
     {
+        wasGrounded = isGrounded;
+
         GroundCheck();
         HandleMovement();
         HandleLook();
@@ -155,13 +153,11 @@ public class SplitScreenFPSController : MonoBehaviour
         if (playerNumber == 1)
             HandleCursor();
 
-        // one-frame inputs (jump is a "pressed this frame" style flag)
         jumpRequested = false;
         attackPressed = false;
     }
 
-    // ─────────── INPUT ───────────
-
+    // INPUT
     public void OnMove(InputValue value) => moveInput = value.Get<Vector2>();
     public void OnLook(InputValue value) => lookInput = value.Get<Vector2>();
 
@@ -169,15 +165,35 @@ public class SplitScreenFPSController : MonoBehaviour
     {
         bool pressed = isUsingGamepad ? value.Get<float>() > 0.5f : value.isPressed;
         if (pressed)
-        {
-            // latch the request – HandleJump() will consume it this frame
             jumpRequested = true;
-        }
     }
 
     public void OnSprint(InputValue value)
     {
-        sprintPressed = isUsingGamepad ? value.Get<float>() > 0.5f : value.isPressed;
+        if (isUsingGamepad)
+        {
+            // For gamepad triggers (0 to 1 range)
+            sprintPressed = value.Get<float>() > 0.5f;
+        }
+        else
+        {
+            // For keyboard - check if button is currently held down
+            sprintPressed = value.isPressed;
+        }
+    }
+
+    public void OnCrouch(InputValue value)
+    {
+        if (isUsingGamepad)
+        {
+            // For gamepad button
+            crouchPressed = value.Get<float>() > 0.5f;
+        }
+        else
+        {
+            // For keyboard - hold to crouch
+            crouchPressed = value.isPressed;
+        }
     }
 
     public void OnAttack(InputValue value)
@@ -185,55 +201,36 @@ public class SplitScreenFPSController : MonoBehaviour
         if (value.isPressed)
         {
             attackPressed = true;
-
             if (animator != null)
-            {
                 animator.SetTrigger("Attack");
-            }
         }
     }
 
     public void OnToggleView(InputValue value)
     {
         if (value.isPressed)
-        {
             isThirdPerson = !isThirdPerson;
-        }
     }
 
-    // ─────────── GROUND CHECK ───────────
-
+    // GROUND CHECK
     void GroundCheck()
     {
-        if (controller == null) return;
-
-        bool wasGrounded = isGrounded;
-
-        // Use controller.isGrounded (reliable) + optional sphere check
         bool controllerGrounded = controller.isGrounded;
-        bool sphereGrounded = false;
-
-        if (groundCheck != null)
-        {
-            sphereGrounded = Physics.CheckSphere(
-                groundCheck.position,
-                groundCheckDistance,
-                groundMask,
-                QueryTriggerInteraction.Ignore
-            );
-        }
+        bool sphereGrounded = Physics.CheckSphere(
+            groundCheck.position,
+            groundCheckDistance,
+            groundMask,
+            QueryTriggerInteraction.Ignore);
 
         isGrounded = controllerGrounded || sphereGrounded;
 
         if (isGrounded)
         {
-            // small downward force to keep controller stuck to ground
-            if (velocity.y < 0f)
+            if (velocity.y < 0)
                 velocity.y = -2f;
 
             lastGroundedTime = Time.time;
 
-            // just landed → turn off jump bool
             if (!wasGrounded && animator != null)
             {
                 animator.SetBool("IsJumping", false);
@@ -241,8 +238,7 @@ public class SplitScreenFPSController : MonoBehaviour
         }
     }
 
-    // ─────────── JUMP SYSTEM ───────────
-
+    // JUMP
     void HandleJump()
     {
         bool cooldownReady = Time.time - lastJumpTime >= jumpCooldown;
@@ -250,55 +246,39 @@ public class SplitScreenFPSController : MonoBehaviour
 
         if (jumpRequested && groundedOrCoyote && cooldownReady)
         {
-            // physics jump
             velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
             lastJumpTime = Time.time;
 
-            // animation jump
             if (animator != null)
-            {
                 animator.SetBool("IsJumping", true);
-
-                if (!string.IsNullOrEmpty(jumpTriggerName))
-                {
-                    animator.ResetTrigger(jumpTriggerName);  // avoid double-fire edge cases
-                    animator.SetTrigger(jumpTriggerName);
-                }
-            }
         }
     }
 
-    // ─────────── GRAVITY ───────────
-
+    // GRAVITY
     void ApplyGravity()
     {
-        // Apply extra gravity multipliers depending on jump phase
-        if (velocity.y < 0f)
-        {
-            // falling
+        if (velocity.y < 0)
             velocity.y += gravity * gravityMultiplierFalling * Time.deltaTime;
-        }
-        else if (velocity.y > 0f && !jumpRequested)
-        {
-            // rising but jump button is not held → short hop
+        else if (velocity.y > 0 && !jumpRequested)
             velocity.y += gravity * gravityMultiplierJumpCancel * Time.deltaTime;
-        }
         else
-        {
-            // normal rising
             velocity.y += gravity * gravityMultiplierRising * Time.deltaTime;
-        }
     }
 
-    // ─────────── MOVEMENT ───────────
-
+    // MOVEMENT
     void HandleMovement()
     {
         Vector3 desiredMove =
             transform.forward * moveInput.y +
-            transform.right  * moveInput.x;
+            transform.right * moveInput.x;
 
-        float targetSpeed = sprintPressed ? sprintSpeed : walkSpeed;
+        float targetSpeed;
+
+        // Determine speed based on crouch/sprint
+        if (crouchPressed)
+            targetSpeed = crouchSpeed;
+        else
+            targetSpeed = sprintPressed ? sprintSpeed : walkSpeed;
 
         if (desiredMove.sqrMagnitude > 1f)
             desiredMove.Normalize();
@@ -310,13 +290,24 @@ public class SplitScreenFPSController : MonoBehaviour
 
         float smoothTime = isGrounded ? groundedSmoothTime : airSmoothTime;
         float controlFactor = isGrounded ? 1f : airControl;
-        float lerpFactor = Mathf.Clamp01(Time.deltaTime / Mathf.Max(smoothTime, 0.0001f)) * controlFactor;
+
+        float lerpFactor = Mathf.Clamp01(Time.deltaTime / Mathf.Max(0.0001f, smoothTime)) * controlFactor;
 
         currentMoveVelocity = Vector3.Lerp(currentMoveVelocity, targetVelocity, lerpFactor);
+
+        // Adjust character controller height and center for crouching
+        float targetHeight = crouchPressed ? crouchHeight : originalHeight;
+        float heightDifference = originalHeight - targetHeight;
+        float targetCenterY = originalCenterY - (heightDifference * 0.5f);
+
+        controller.height = Mathf.Lerp(controller.height, targetHeight, Time.deltaTime * 10f);
+
+        Vector3 newCenter = controller.center;
+        newCenter.y = Mathf.Lerp(controller.center.y, targetCenterY, Time.deltaTime * 10f);
+        controller.center = newCenter;
     }
 
-    // ─────────── LOOK ───────────
-
+    // LOOK
     void HandleLook()
     {
         if (cameraTransform == null) return;
@@ -330,11 +321,11 @@ public class SplitScreenFPSController : MonoBehaviour
 
         targetCameraPitch -= pitch;
         targetCameraPitch = Mathf.Clamp(targetCameraPitch, -lookXLimit, lookXLimit);
+
         cameraPitch = Mathf.Lerp(cameraPitch, targetCameraPitch, lookSmoothing * Time.deltaTime);
     }
 
-    // ─────────── CAMERA POSITION ───────────
-
+    // CAMERA POSITION
     void UpdateCameraPosition()
     {
         if (cameraTransform == null) return;
@@ -342,7 +333,7 @@ public class SplitScreenFPSController : MonoBehaviour
         if (!isThirdPerson)
         {
             cameraTransform.localPosition = firstPersonOffset;
-            cameraTransform.localRotation = Quaternion.Euler(cameraPitch, 0f, 0f);
+            cameraTransform.localRotation = Quaternion.Euler(cameraPitch, 0, 0);
             return;
         }
 
@@ -363,8 +354,7 @@ public class SplitScreenFPSController : MonoBehaviour
                 dir.normalized,
                 out RaycastHit hit,
                 dist,
-                cameraCollisionMask,
-                QueryTriggerInteraction.Ignore))
+                cameraCollisionMask))
             {
                 desiredPos = pivot + dir.normalized * (hit.distance - 0.05f);
             }
@@ -374,25 +364,45 @@ public class SplitScreenFPSController : MonoBehaviour
         cameraTransform.rotation = camRot;
     }
 
-    // ─────────── ANIMATION ───────────
-
+    // ANIMATOR
     void UpdateAnimator()
     {
         if (animator == null) return;
 
-        float speedValue =
-            moveInput.magnitude > 0.1f
-                ? (sprintPressed ? 1f : 0.5f)
-                : 0f;
+        float horizontalSpeed = new Vector2(currentMoveVelocity.x, currentMoveVelocity.z).magnitude;
 
-        animator.SetFloat("Speed", speedValue);
+        Vector3 localVelocity = transform.InverseTransformDirection(currentMoveVelocity);
+        bool movingBackward = localVelocity.z < -0.1f;
 
-        // Optional extra param if you want it in your Animator:
-        // animator.SetBool("Grounded", isGrounded);
+        float targetAnimSpeed;
+
+        if (!isGrounded)
+        {
+            targetAnimSpeed = currentAnimSpeed;
+        }
+        else
+        {
+            if (horizontalSpeed > 0.1f)
+            {
+                float speedValue = sprintPressed ? 1f : 0.5f;
+                targetAnimSpeed = movingBackward ? -speedValue : speedValue;
+            }
+            else
+            {
+                targetAnimSpeed = 0f;
+            }
+        }
+
+        currentAnimSpeed = Mathf.Lerp(
+            currentAnimSpeed,
+            targetAnimSpeed,
+            Time.deltaTime / Mathf.Max(animSpeedSmoothTime, 0.0001f));
+
+        animator.SetFloat("Speed", currentAnimSpeed);
+        animator.SetBool("IsCrouching", crouchPressed);
     }
 
-    // ─────────── CURSOR ───────────
-
+    // CURSOR
     void HandleCursor()
     {
         if (Input.GetKeyDown(KeyCode.Escape))
@@ -401,8 +411,7 @@ public class SplitScreenFPSController : MonoBehaviour
             Cursor.visible = true;
         }
 
-        if (Input.GetMouseButtonDown(0) &&
-            Cursor.lockState == CursorLockMode.None)
+        if (Input.GetMouseButtonDown(0) && Cursor.lockState == CursorLockMode.None)
         {
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;

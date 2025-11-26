@@ -123,9 +123,9 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""name"": ""Sprint"",
                     ""type"": ""Button"",
                     ""id"": ""51c34a21-05f4-40e6-a7b0-39f47e72e0ad"",
-                    ""expectedControlType"": ""Button"",
+                    ""expectedControlType"": """",
                     ""processors"": """",
-                    ""interactions"": """",
+                    ""interactions"": ""Hold"",
                     ""initialStateCheck"": false
                 },
                 {
@@ -141,6 +141,15 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""name"": ""ToggleView"",
                     ""type"": ""Button"",
                     ""id"": ""3d87f032-410a-442e-859a-755b1ba00350"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Crouch"",
+                    ""type"": ""Button"",
+                    ""id"": ""da1c3488-947e-462a-8613-c7f1044cb88d"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
@@ -174,7 +183,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""name"": """",
                     ""id"": ""8d7bda23-a1b5-4ba1-87f8-3f2a093543aa"",
                     ""path"": ""<Keyboard>/shift"",
-                    ""interactions"": ""Hold"",
+                    ""interactions"": ""Hold(duration=0.5,pressPoint=0.5)"",
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""Sprint"",
@@ -257,6 +266,17 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""action"": ""ToggleView"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""687468bf-6069-4971-9bd3-bd1f8b6b215f"",
+                    ""path"": ""<Keyboard>/leftCtrl"",
+                    ""interactions"": ""Press(behavior=2)"",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Crouch"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         },
@@ -313,6 +333,15 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""name"": ""ToggleView"",
                     ""type"": ""Button"",
                     ""id"": ""39a11b81-8b9c-41aa-b17a-0cc1da1e2544"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Coruch"",
+                    ""type"": ""Button"",
+                    ""id"": ""98383a33-00e2-4b47-bd44-d3bde89f70c5"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
@@ -473,6 +502,17 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""action"": ""ToggleView"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""784a48af-59d5-4721-b026-dc5073a15bff"",
+                    ""path"": ""<Gamepad>/buttonEast"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Coruch"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -515,6 +555,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
         m_Player1_Sprint = m_Player1.FindAction("Sprint", throwIfNotFound: true);
         m_Player1_attack = m_Player1.FindAction("attack", throwIfNotFound: true);
         m_Player1_ToggleView = m_Player1.FindAction("ToggleView", throwIfNotFound: true);
+        m_Player1_Crouch = m_Player1.FindAction("Crouch", throwIfNotFound: true);
         // Player2
         m_Player2 = asset.FindActionMap("Player2", throwIfNotFound: true);
         m_Player2_Move = m_Player2.FindAction("Move", throwIfNotFound: true);
@@ -523,6 +564,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
         m_Player2_Sprint = m_Player2.FindAction("Sprint", throwIfNotFound: true);
         m_Player2_attack = m_Player2.FindAction("attack", throwIfNotFound: true);
         m_Player2_ToggleView = m_Player2.FindAction("ToggleView", throwIfNotFound: true);
+        m_Player2_Coruch = m_Player2.FindAction("Coruch", throwIfNotFound: true);
     }
 
     ~@Controls()
@@ -610,6 +652,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player1_Sprint;
     private readonly InputAction m_Player1_attack;
     private readonly InputAction m_Player1_ToggleView;
+    private readonly InputAction m_Player1_Crouch;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player1".
     /// </summary>
@@ -645,6 +688,10 @@ public partial class @Controls: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player1/ToggleView".
         /// </summary>
         public InputAction @ToggleView => m_Wrapper.m_Player1_ToggleView;
+        /// <summary>
+        /// Provides access to the underlying input action "Player1/Crouch".
+        /// </summary>
+        public InputAction @Crouch => m_Wrapper.m_Player1_Crouch;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -689,6 +736,9 @@ public partial class @Controls: IInputActionCollection2, IDisposable
             @ToggleView.started += instance.OnToggleView;
             @ToggleView.performed += instance.OnToggleView;
             @ToggleView.canceled += instance.OnToggleView;
+            @Crouch.started += instance.OnCrouch;
+            @Crouch.performed += instance.OnCrouch;
+            @Crouch.canceled += instance.OnCrouch;
         }
 
         /// <summary>
@@ -718,6 +768,9 @@ public partial class @Controls: IInputActionCollection2, IDisposable
             @ToggleView.started -= instance.OnToggleView;
             @ToggleView.performed -= instance.OnToggleView;
             @ToggleView.canceled -= instance.OnToggleView;
+            @Crouch.started -= instance.OnCrouch;
+            @Crouch.performed -= instance.OnCrouch;
+            @Crouch.canceled -= instance.OnCrouch;
         }
 
         /// <summary>
@@ -761,6 +814,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player2_Sprint;
     private readonly InputAction m_Player2_attack;
     private readonly InputAction m_Player2_ToggleView;
+    private readonly InputAction m_Player2_Coruch;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player2".
     /// </summary>
@@ -796,6 +850,10 @@ public partial class @Controls: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player2/ToggleView".
         /// </summary>
         public InputAction @ToggleView => m_Wrapper.m_Player2_ToggleView;
+        /// <summary>
+        /// Provides access to the underlying input action "Player2/Coruch".
+        /// </summary>
+        public InputAction @Coruch => m_Wrapper.m_Player2_Coruch;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -840,6 +898,9 @@ public partial class @Controls: IInputActionCollection2, IDisposable
             @ToggleView.started += instance.OnToggleView;
             @ToggleView.performed += instance.OnToggleView;
             @ToggleView.canceled += instance.OnToggleView;
+            @Coruch.started += instance.OnCoruch;
+            @Coruch.performed += instance.OnCoruch;
+            @Coruch.canceled += instance.OnCoruch;
         }
 
         /// <summary>
@@ -869,6 +930,9 @@ public partial class @Controls: IInputActionCollection2, IDisposable
             @ToggleView.started -= instance.OnToggleView;
             @ToggleView.performed -= instance.OnToggleView;
             @ToggleView.canceled -= instance.OnToggleView;
+            @Coruch.started -= instance.OnCoruch;
+            @Coruch.performed -= instance.OnCoruch;
+            @Coruch.canceled -= instance.OnCoruch;
         }
 
         /// <summary>
@@ -977,6 +1041,13 @@ public partial class @Controls: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnToggleView(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Crouch" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnCrouch(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Player2" which allows adding and removing callbacks.
@@ -1027,5 +1098,12 @@ public partial class @Controls: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnToggleView(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Coruch" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnCoruch(InputAction.CallbackContext context);
     }
 }
