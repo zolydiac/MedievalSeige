@@ -154,6 +154,15 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Block"",
+                    ""type"": ""Button"",
+                    ""id"": ""2d1abaf6-51db-428f-b61b-648cf2ef9b5d"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -277,6 +286,28 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""action"": ""Crouch"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""cb881e7d-623b-4b17-927d-323038af7f3f"",
+                    ""path"": ""<Mouse>/rightButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Block"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""b91b1f33-011c-4913-bd3a-ae47002fa6dd"",
+                    ""path"": ""<XInputController>/rightShoulder"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Block"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         },
@@ -286,7 +317,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
             ""actions"": [
                 {
                     ""name"": ""Move"",
-                    ""type"": ""Value"",
+                    ""type"": ""Button"",
                     ""id"": ""e6ca72d6-0aa2-4aeb-8f30-4d63bb060699"",
                     ""expectedControlType"": """",
                     ""processors"": """",
@@ -315,7 +346,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""name"": ""Sprint"",
                     ""type"": ""Button"",
                     ""id"": ""83d4d6c5-a4d4-40b5-b72d-c736eb30bdae"",
-                    ""expectedControlType"": ""Button"",
+                    ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
@@ -342,6 +373,15 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""name"": ""Coruch"",
                     ""type"": ""Button"",
                     ""id"": ""98383a33-00e2-4b47-bd44-d3bde89f70c5"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Block"",
+                    ""type"": ""Button"",
+                    ""id"": ""9fb977e7-5f34-4b5a-8bcb-064421929871"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
@@ -513,6 +553,28 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""action"": ""Coruch"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""79d5635a-5b59-4ec8-9d04-dbd57ede303c"",
+                    ""path"": ""<Mouse>/rightButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Block"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""f16eb298-c032-4428-bb58-cfd8ca95cac1"",
+                    ""path"": ""<XInputController>/rightShoulder"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Block"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -556,6 +618,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
         m_Player1_attack = m_Player1.FindAction("attack", throwIfNotFound: true);
         m_Player1_ToggleView = m_Player1.FindAction("ToggleView", throwIfNotFound: true);
         m_Player1_Crouch = m_Player1.FindAction("Crouch", throwIfNotFound: true);
+        m_Player1_Block = m_Player1.FindAction("Block", throwIfNotFound: true);
         // Player2
         m_Player2 = asset.FindActionMap("Player2", throwIfNotFound: true);
         m_Player2_Move = m_Player2.FindAction("Move", throwIfNotFound: true);
@@ -565,6 +628,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
         m_Player2_attack = m_Player2.FindAction("attack", throwIfNotFound: true);
         m_Player2_ToggleView = m_Player2.FindAction("ToggleView", throwIfNotFound: true);
         m_Player2_Coruch = m_Player2.FindAction("Coruch", throwIfNotFound: true);
+        m_Player2_Block = m_Player2.FindAction("Block", throwIfNotFound: true);
     }
 
     ~@Controls()
@@ -653,6 +717,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player1_attack;
     private readonly InputAction m_Player1_ToggleView;
     private readonly InputAction m_Player1_Crouch;
+    private readonly InputAction m_Player1_Block;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player1".
     /// </summary>
@@ -692,6 +757,10 @@ public partial class @Controls: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player1/Crouch".
         /// </summary>
         public InputAction @Crouch => m_Wrapper.m_Player1_Crouch;
+        /// <summary>
+        /// Provides access to the underlying input action "Player1/Block".
+        /// </summary>
+        public InputAction @Block => m_Wrapper.m_Player1_Block;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -739,6 +808,9 @@ public partial class @Controls: IInputActionCollection2, IDisposable
             @Crouch.started += instance.OnCrouch;
             @Crouch.performed += instance.OnCrouch;
             @Crouch.canceled += instance.OnCrouch;
+            @Block.started += instance.OnBlock;
+            @Block.performed += instance.OnBlock;
+            @Block.canceled += instance.OnBlock;
         }
 
         /// <summary>
@@ -771,6 +843,9 @@ public partial class @Controls: IInputActionCollection2, IDisposable
             @Crouch.started -= instance.OnCrouch;
             @Crouch.performed -= instance.OnCrouch;
             @Crouch.canceled -= instance.OnCrouch;
+            @Block.started -= instance.OnBlock;
+            @Block.performed -= instance.OnBlock;
+            @Block.canceled -= instance.OnBlock;
         }
 
         /// <summary>
@@ -815,6 +890,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player2_attack;
     private readonly InputAction m_Player2_ToggleView;
     private readonly InputAction m_Player2_Coruch;
+    private readonly InputAction m_Player2_Block;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player2".
     /// </summary>
@@ -854,6 +930,10 @@ public partial class @Controls: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player2/Coruch".
         /// </summary>
         public InputAction @Coruch => m_Wrapper.m_Player2_Coruch;
+        /// <summary>
+        /// Provides access to the underlying input action "Player2/Block".
+        /// </summary>
+        public InputAction @Block => m_Wrapper.m_Player2_Block;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -901,6 +981,9 @@ public partial class @Controls: IInputActionCollection2, IDisposable
             @Coruch.started += instance.OnCoruch;
             @Coruch.performed += instance.OnCoruch;
             @Coruch.canceled += instance.OnCoruch;
+            @Block.started += instance.OnBlock;
+            @Block.performed += instance.OnBlock;
+            @Block.canceled += instance.OnBlock;
         }
 
         /// <summary>
@@ -933,6 +1016,9 @@ public partial class @Controls: IInputActionCollection2, IDisposable
             @Coruch.started -= instance.OnCoruch;
             @Coruch.performed -= instance.OnCoruch;
             @Coruch.canceled -= instance.OnCoruch;
+            @Block.started -= instance.OnBlock;
+            @Block.performed -= instance.OnBlock;
+            @Block.canceled -= instance.OnBlock;
         }
 
         /// <summary>
@@ -1048,6 +1134,13 @@ public partial class @Controls: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnCrouch(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Block" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnBlock(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Player2" which allows adding and removing callbacks.
@@ -1105,5 +1198,12 @@ public partial class @Controls: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnCoruch(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Block" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnBlock(InputAction.CallbackContext context);
     }
 }

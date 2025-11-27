@@ -68,6 +68,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "Block",
+                    "type": "Button",
+                    "id": "2d1abaf6-51db-428f-b61b-648cf2ef9b5d",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -191,6 +200,28 @@
                     "action": "Crouch",
                     "isComposite": false,
                     "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "cb881e7d-623b-4b17-927d-323038af7f3f",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Block",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b91b1f33-011c-4913-bd3a-ae47002fa6dd",
+                    "path": "<XInputController>/rightShoulder",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Block",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
             ]
         },
@@ -200,7 +231,7 @@
             "actions": [
                 {
                     "name": "Move",
-                    "type": "Value",
+                    "type": "Button",
                     "id": "e6ca72d6-0aa2-4aeb-8f30-4d63bb060699",
                     "expectedControlType": "",
                     "processors": "",
@@ -229,7 +260,7 @@
                     "name": "Sprint",
                     "type": "Button",
                     "id": "83d4d6c5-a4d4-40b5-b72d-c736eb30bdae",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
@@ -256,6 +287,15 @@
                     "name": "Coruch",
                     "type": "Button",
                     "id": "98383a33-00e2-4b47-bd44-d3bde89f70c5",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Block",
+                    "type": "Button",
+                    "id": "9fb977e7-5f34-4b5a-8bcb-064421929871",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -425,6 +465,28 @@
                     "processors": "",
                     "groups": "",
                     "action": "Coruch",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "79d5635a-5b59-4ec8-9d04-dbd57ede303c",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Block",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "f16eb298-c032-4428-bb58-cfd8ca95cac1",
+                    "path": "<XInputController>/rightShoulder",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Block",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

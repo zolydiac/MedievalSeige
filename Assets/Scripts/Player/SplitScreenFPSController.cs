@@ -54,6 +54,19 @@ public class SplitScreenFPSController : MonoBehaviour
     [Header("Animation")]
     [SerializeField] private Animator animator;
 
+    [Header("Attack Settings")]
+    [SerializeField] private float attackDuration = 0.6f;
+    [SerializeField] private bool canMoveWhileAttacking = false;
+
+    [Header("Shield / Block Settings")]
+    [SerializeField] private Transform leftHand;      // assign LeftHand_Socket in inspector
+    [SerializeField] private GameObject shieldPrefab;       // assign Shield prefab
+    [SerializeField] private float blockMoveSpeedMultiplier = 0.4f;
+    [SerializeField] private bool canBlockWhileAttacking = false;
+
+    private bool isBlocking = false;
+
+
     // Input
     private Vector2 moveInput;
     private Vector2 lookInput;
@@ -61,6 +74,9 @@ public class SplitScreenFPSController : MonoBehaviour
     private bool sprintPressed = false;
     private bool crouchPressed = false;
     private bool attackPressed = false;
+
+    // Attack state
+    private bool isAttacking = false;
 
     // Components
     private CharacterController controller;
@@ -133,6 +149,8 @@ public class SplitScreenFPSController : MonoBehaviour
         {
             cameraTransform.localPosition = firstPersonOffset;
         }
+
+
     }
 
     void Update()
@@ -170,41 +188,60 @@ public class SplitScreenFPSController : MonoBehaviour
 
     public void OnSprint(InputValue value)
     {
-        if (isUsingGamepad)
-        {
-            // For gamepad triggers (0 to 1 range)
-            sprintPressed = value.Get<float>() > 0.5f;
-        }
-        else
-        {
-            // For keyboard - check if button is currently held down
-            sprintPressed = value.isPressed;
-        }
+        sprintPressed = isUsingGamepad ? value.Get<float>() > 0.5f : value.isPressed;
     }
 
     public void OnCrouch(InputValue value)
     {
-        if (isUsingGamepad)
+        crouchPressed = isUsingGamepad ? value.Get<float>() > 0.5f : value.isPressed;
+    }
+
+    // ATTACK
+        public void OnAttack(InputValue value)
+    {
+        if (value.isPressed && !isAttacking)
         {
-            // For gamepad button
-            crouchPressed = value.Get<float>() > 0.5f;
-        }
-        else
-        {
-            // For keyboard - hold to crouch
-            crouchPressed = value.isPressed;
+            // Optional: drop block when attacking
+            isBlocking = false;
+            if (animator != null)
+                animator.SetBool("IsBlocking", false);
+
+            isAttacking = true;
+            attackPressed = true;
+
+            if (animator != null)
+                animator.SetTrigger("Attack");
+
+            float animLength = animator.GetCurrentAnimatorStateInfo(0).length;
+            Invoke(nameof(EndAttack), animLength);
         }
     }
 
-    public void OnAttack(InputValue value)
+
+    private void EndAttack()
     {
-        if (value.isPressed)
-        {
-            attackPressed = true;
-            if (animator != null)
-                animator.SetTrigger("Attack");
-        }
+        isAttacking = false;
     }
+
+        public void OnBlock(InputValue value)
+    {
+        bool pressed = isUsingGamepad ? value.Get<float>() > 0.5f : value.isPressed;
+
+        // Optional: prevent blocking while attacking unless allowed
+        if (isAttacking && !canBlockWhileAttacking)
+            pressed = false;
+
+        isBlocking = pressed;
+
+        ShieldController shield = GetComponentInChildren<ShieldController>();
+        if (shield != null)
+            shield.SetBlocking(isBlocking);
+
+
+        if (animator != null)
+            animator.SetBool("IsBlocking", isBlocking);
+    }
+
 
     public void OnToggleView(InputValue value)
     {
@@ -268,17 +305,30 @@ public class SplitScreenFPSController : MonoBehaviour
     // MOVEMENT
     void HandleMovement()
     {
+        // BLOCK MOVEMENT DURING ATTACK
+        if (isAttacking && !canMoveWhileAttacking)
+        {
+            float stopSmooth = isGrounded ? groundedSmoothTime : airSmoothTime;
+            float stopLerp = Mathf.Clamp01(Time.deltaTime / Mathf.Max(0.0001f, stopSmooth));
+            currentMoveVelocity = Vector3.Lerp(currentMoveVelocity, Vector3.zero, stopLerp);
+            return;
+        }
+
         Vector3 desiredMove =
             transform.forward * moveInput.y +
             transform.right * moveInput.x;
 
         float targetSpeed;
 
-        // Determine speed based on crouch/sprint
         if (crouchPressed)
             targetSpeed = crouchSpeed;
         else
             targetSpeed = sprintPressed ? sprintSpeed : walkSpeed;
+
+        // Reduce movement speed while blocking
+        if (isBlocking)
+            targetSpeed *= blockMoveSpeedMultiplier;
+
 
         if (desiredMove.sqrMagnitude > 1f)
             desiredMove.Normalize();
@@ -295,7 +345,7 @@ public class SplitScreenFPSController : MonoBehaviour
 
         currentMoveVelocity = Vector3.Lerp(currentMoveVelocity, targetVelocity, lerpFactor);
 
-        // Adjust character controller height and center for crouching
+        // Adjust height for crouching
         float targetHeight = crouchPressed ? crouchHeight : originalHeight;
         float heightDifference = originalHeight - targetHeight;
         float targetCenterY = originalCenterY - (heightDifference * 0.5f);
