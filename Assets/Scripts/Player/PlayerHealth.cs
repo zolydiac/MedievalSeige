@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using System;
 
 public class PlayerHealth : MonoBehaviour
 {
@@ -21,13 +22,20 @@ public class PlayerHealth : MonoBehaviour
     [SerializeField] private string deathStateOrClipName = "HumanM@Death01";
 
     [Header("Death Settings")]
-    [Tooltip("Disables CharacterController after the death animation finishes.")]
+    [Tooltip("Disables CharacterController after death animation finishes.")]
     [SerializeField] private bool disableCharacterController = true;
 
     [Tooltip("Extra time after animation completes before disabling physics.")]
     [SerializeField] private float postDeathDelay = 0.1f;
 
-    // Internal flags
+    // Event fired BEFORE health is reduced (for shield effects)
+    public event Action<int> OnDamageTakenRaw;
+
+    // References
+    private ShieldBlock shieldBlock;
+    private SplitScreenFPSController fpsController;
+
+    // Animator parameter validation
     private bool animatorHasHitTrigger = false;
     private bool animatorHasDeathBool = false;
 
@@ -39,17 +47,16 @@ public class PlayerHealth : MonoBehaviour
     {
         currentHealth = maxHealth;
 
-        // Auto-find animator if not assigned
         if (animator == null)
             animator = GetComponentInChildren<Animator>();
 
         if (animator == null)
         {
-            Debug.LogError($"[PlayerHealth] No Animator found on {name} or children!");
+            Debug.LogError($"[PlayerHealth] No Animator found on {name}!");
             return;
         }
 
-        // Validate parameters exist
+        // Validate Animator parameters
         foreach (var p in animator.parameters)
         {
             if (p.name == hitTriggerName && p.type == AnimatorControllerParameterType.Trigger)
@@ -60,23 +67,33 @@ public class PlayerHealth : MonoBehaviour
         }
 
         if (!animatorHasHitTrigger)
-            Debug.LogWarning($"[PlayerHealth] Hit trigger '{hitTriggerName}' not found. Hit animation will be skipped.");
+            Debug.LogWarning($"[PlayerHealth] Hit trigger '{hitTriggerName}' not found!");
 
         if (!animatorHasDeathBool)
-            Debug.LogWarning($"[PlayerHealth] Death bool '{deathBoolName}' not found. Death animation will not activate!");
+            Debug.LogWarning($"[PlayerHealth] Death bool '{deathBoolName}' not found!");
+
+        // Reference to controller & shield
+        fpsController = GetComponent<SplitScreenFPSController>();
+        shieldBlock = GetComponentInChildren<ShieldBlock>();
     }
 
     // -----------------------------------------------------------------------
     // DAMAGE
     // -----------------------------------------------------------------------
-    public void TakeDamage(int amount)
+    public void TakeDamage(int rawDamage)
     {
         if (isDead)
             return;
 
-        currentHealth -= amount;
+        // Notify listeners (ShieldBlock will use raw damage for special effects only)
+        OnDamageTakenRaw?.Invoke(rawDamage);
+
+        int finalDamage = ApplyShieldReduction(rawDamage);
+
+        currentHealth -= finalDamage;
         currentHealth = Mathf.Max(0, currentHealth);
-        Debug.Log($"[PlayerHealth] {name} took {amount} damage. HP = {currentHealth}/{maxHealth}");
+
+        Debug.Log($"[PlayerHealth] {name} took {finalDamage} damage. HP = {currentHealth}/{maxHealth}");
 
         if (currentHealth <= 0)
         {
@@ -84,9 +101,36 @@ public class PlayerHealth : MonoBehaviour
             return;
         }
 
-        // Play hit animation if exists
+        // Play damage animation
         if (animatorHasHitTrigger)
             animator.SetTrigger(hitTriggerName);
+    }
+
+    // Apply shield reduction ONLY when blocking
+    private int ApplyShieldReduction(int damage)
+    {
+        if (shieldBlock == null || !shieldBlock.IsBlocking())
+            return damage;
+
+        float reductionPercent = shieldBlock.GetDamageReductionPercent();
+        int finalDamage = Mathf.RoundToInt(damage * (1f - reductionPercent / 100f));
+
+        Debug.Log($"[PlayerHealth] Shield reduced damage from {damage} to {finalDamage}");
+
+        return finalDamage;
+    }
+
+    // -----------------------------------------------------------------------
+    // HEALING
+    // -----------------------------------------------------------------------
+    public void Heal(int amount)
+    {
+        if (isDead) return;
+
+        currentHealth += amount;
+        currentHealth = Mathf.Min(currentHealth, maxHealth);
+
+        Debug.Log($"[PlayerHealth] Player healed {amount}. Health = {currentHealth}/{maxHealth}");
     }
 
     // -----------------------------------------------------------------------
@@ -97,61 +141,45 @@ public class PlayerHealth : MonoBehaviour
         if (isDead) return;
         isDead = true;
 
-        Debug.Log($"[PlayerHealth] {name} DIED.");
+        Debug.Log($"[PlayerHealth] {name} died.");
 
-        // Disable player controls
-        var controller = GetComponent<SplitScreenFPSController>();
-        if (controller != null) controller.enabled = false;
+        // Disable player movement
+        if (fpsController != null)
+            fpsController.enabled = false;
 
-        // Disable sword hits
-        var sword = GetComponentInChildren<SwordDamage>();
-        if (sword != null) sword.DisableDamage();
-
-        // Trigger death animation bool
+        // Trigger animation
         if (animatorHasDeathBool)
             animator.SetBool(deathBoolName, true);
 
-        // Get actual clip length
         float duration = GetDeathAnimationLength();
-
         Debug.Log($"[PlayerHealth] Death animation length = {duration}s");
 
-        // Schedule disabling physics after animation
         StartCoroutine(DisableAfterDelay(duration + postDeathDelay));
     }
 
-    // -----------------------------------------------------------------------
-    // DETECT ANIMATION LENGTH
-    // -----------------------------------------------------------------------
     private float GetDeathAnimationLength()
     {
-        if (animator == null)
-            return 1.5f;
+        if (animator == null) return 1.5f;
 
         RuntimeAnimatorController rac = animator.runtimeAnimatorController;
 
         foreach (var clip in rac.animationClips)
         {
             if (clip.name == deathStateOrClipName)
-            {
                 return clip.length;
-            }
         }
 
         Debug.LogWarning($"[PlayerHealth] Could not find death clip '{deathStateOrClipName}'. Using fallback 1.5s.");
         return 1.5f;
     }
 
-    // -----------------------------------------------------------------------
-    // DISABLE CHARACTERCONTROLLER AFTER DEATH
-    // -----------------------------------------------------------------------
     private IEnumerator DisableAfterDelay(float delay)
     {
         yield return new WaitForSeconds(delay);
 
         if (disableCharacterController)
         {
-            var cc = GetComponent<CharacterController>();
+            CharacterController cc = GetComponent<CharacterController>();
             if (cc != null)
             {
                 cc.enabled = false;
@@ -159,4 +187,10 @@ public class PlayerHealth : MonoBehaviour
             }
         }
     }
+
+    // -----------------------------------------------------------------------
+    // PUBLIC GETTERS
+    // -----------------------------------------------------------------------
+    public int GetCurrentHealth() => currentHealth;
+    public int GetMaxHealth() => maxHealth;
 }

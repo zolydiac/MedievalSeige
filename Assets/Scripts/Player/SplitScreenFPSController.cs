@@ -4,6 +4,8 @@ using UnityEngine.InputSystem;
 [RequireComponent(typeof(CharacterController))]
 public class SplitScreenFPSController : MonoBehaviour
 {
+    private enum WeaponType { SwordShield, Bow }
+
     [Header("Player Setup")]
     [SerializeField] private int playerNumber = 1;
     [SerializeField] private PlayerInput playerInput;
@@ -11,14 +13,8 @@ public class SplitScreenFPSController : MonoBehaviour
     [Header("Movement Settings")]
     [SerializeField] private float walkSpeed = 6f;
     [SerializeField] private float sprintSpeed = 10f;
-    [SerializeField] private float crouchSpeed = 3f;
     [SerializeField] private float jumpHeight = 1.5f;
     [SerializeField] private float gravity = -20f;
-
-    [Header("Crouch Settings")]
-    [SerializeField] private float crouchHeight = 1f;
-    private float originalHeight;
-    private float originalCenterY;
 
     [Header("Movement Smoothing")]
     [SerializeField] private float groundedSmoothTime = 0.08f;
@@ -55,33 +51,35 @@ public class SplitScreenFPSController : MonoBehaviour
     [SerializeField] private Animator animator;
 
     [Header("Attack Settings")]
-    [SerializeField] private float attackDuration = 0.6f;
     [SerializeField] private bool canMoveWhileAttacking = false;
 
     [Header("Shield / Block Settings")]
-    [SerializeField] private Transform leftHand;      // assign LeftHand_Socket in inspector
-    [SerializeField] private GameObject shieldPrefab;       // assign Shield prefab
     [SerializeField] private float blockMoveSpeedMultiplier = 0.4f;
     [SerializeField] private bool canBlockWhileAttacking = false;
 
-    private bool isBlocking = false;
+    [Header("Aiming / Bow Settings")]
+    [SerializeField] private float aimMoveSpeedMultiplier = 0.6f; // speed while drawing bow
 
+    [Header("Sword References")]
+    [SerializeField] private GameObject swordInHandRoot;   // Sword in hand (child of hand bone)
+    [SerializeField] private GameObject swordOnBackRoot;   // Sword on back (child of spine bone)
 
-    // Input
+    [Header("Shield References")]
+    [SerializeField] private GameObject shieldInHandRoot;  // Shield in hand
+    [SerializeField] private GameObject shieldOnBackRoot;  // Shield on back
+
+    [Header("Bow References")]
+    [SerializeField] private GameObject bowInHandRoot;     // Bow in hand
+    [SerializeField] private GameObject bowOnBackRoot;     // Bow on back
+
+    // Input state
     private Vector2 moveInput;
     private Vector2 lookInput;
     private bool jumpRequested = false;
     private bool sprintPressed = false;
-    private bool crouchPressed = false;
-    private bool attackPressed = false;
 
-    // Attack state
-    private bool isAttacking = false;
-
-    // Components
+    // Movement / controller
     private CharacterController controller;
-
-    // Movement state
     private Vector3 velocity;
     private Vector3 currentMoveVelocity;
     private bool isGrounded;
@@ -98,21 +96,28 @@ public class SplitScreenFPSController : MonoBehaviour
     private float lastJumpTime = -999f;
     private float lastGroundedTime = 0f;
 
-    private float currentAnimSpeed = 0f;
-    [Header("Animation Smoothing")]
+    // Animation smoothing
     [SerializeField] private float animSpeedSmoothTime = 0.15f;
+    private float currentAnimSpeed = 0f;
 
     private bool isUsingGamepad = false;
     private bool isThirdPerson;
 
+    // Combat state
+    private bool isAttacking = false;
+    private bool isBlocking = false;
+    private WeaponType currentWeapon = WeaponType.SwordShield;
+
+    // Components
+    private ShieldBlock shieldBlock;
+    private BowController bowController;
+
     void Start()
     {
         controller = GetComponent<CharacterController>();
-        originalHeight = controller.height;
-        originalCenterY = controller.center.y;
 
         if (animator == null)
-            animator = GetComponent<Animator>();
+            animator = GetComponentInChildren<Animator>();
 
         if (playerInput == null)
             playerInput = GetComponent<PlayerInput>();
@@ -146,11 +151,14 @@ public class SplitScreenFPSController : MonoBehaviour
         isThirdPerson = startInThirdPerson;
 
         if (cameraTransform != null && !isThirdPerson)
-        {
             cameraTransform.localPosition = firstPersonOffset;
-        }
 
+        // Get weapon-related components
+        shieldBlock = GetComponentInChildren<ShieldBlock>();
+        bowController = GetComponentInChildren<BowController>();
 
+        // Ensure we start in sword+shield mode
+        EquipWeapon(WeaponType.SwordShield);
     }
 
     void Update()
@@ -171,11 +179,12 @@ public class SplitScreenFPSController : MonoBehaviour
         if (playerNumber == 1)
             HandleCursor();
 
+        // reset per-frame flags
         jumpRequested = false;
-        attackPressed = false;
     }
 
-    // INPUT
+    // ---------------- INPUT CALLBACKS ----------------
+
     public void OnMove(InputValue value) => moveInput = value.Get<Vector2>();
     public void OnLook(InputValue value) => lookInput = value.Get<Vector2>();
 
@@ -191,31 +200,70 @@ public class SplitScreenFPSController : MonoBehaviour
         sprintPressed = isUsingGamepad ? value.Get<float>() > 0.5f : value.isPressed;
     }
 
-    public void OnCrouch(InputValue value)
+    // Keyboard weapon select
+    public void OnSelectSword(InputValue value)
     {
-        crouchPressed = isUsingGamepad ? value.Get<float>() > 0.5f : value.isPressed;
+        if (!value.isPressed) return;
+        EquipWeapon(WeaponType.SwordShield);
     }
 
-    // ATTACK
-        public void OnAttack(InputValue value)
+    public void OnSelectBow(InputValue value)
     {
-        if (value.isPressed && !isAttacking)
+        if (!value.isPressed) return;
+        EquipWeapon(WeaponType.Bow);
+    }
+
+    // Gamepad weapon cycle (Y / Triangle)
+    public void OnCycleWeapon(InputValue value)
+    {
+        if (!value.isPressed) return;
+
+        WeaponType nextWeapon =
+            (currentWeapon == WeaponType.SwordShield) ? WeaponType.Bow : WeaponType.SwordShield;
+
+        EquipWeapon(nextWeapon);
+    }
+
+    // Attack:
+    // - Sword mode: press = swing
+    // - Bow mode: press = start draw, release = fire
+    public void OnAttack(InputValue value)
+    {
+        bool pressed = isUsingGamepad ? value.Get<float>() > 0.5f : value.isPressed;
+
+        // Sword & shield mode
+        if (currentWeapon == WeaponType.SwordShield)
         {
-            // Optional: drop block when attacking
-            isBlocking = false;
-            if (animator != null)
-                animator.SetBool("IsBlocking", false);
+            if (pressed && !isAttacking)
+            {
+                // Stop blocking if we were
+                isBlocking = false;
+                if (shieldBlock != null) shieldBlock.SetBlocking(false);
+                if (animator != null) animator.SetBool("IsBlocking", false);
 
-            isAttacking = true;
-            attackPressed = true;
+                isAttacking = true;
 
-            if (animator != null)
-                animator.SetTrigger("Attack");
+                if (animator != null)
+                    animator.SetTrigger("Attack");
 
-            float animLength = animator.GetCurrentAnimatorStateInfo(0).length;
-            Invoke(nameof(EndAttack), animLength);
+                float animLength = (animator != null)
+                    ? animator.GetCurrentAnimatorStateInfo(0).length
+                    : 0.6f;
+
+                Invoke(nameof(EndAttack), animLength);
+            }
+        }
+        else // Bow mode
+        {
+            if (!pressed) return;           // only react on press now
+            if (bowController == null) return;
+            if (!bowController.IsEquipped()) return;
+
+            // Fire a quick shot on press
+            bowController.QuickShot();
         }
     }
+
 
 
     private void EndAttack()
@@ -223,23 +271,32 @@ public class SplitScreenFPSController : MonoBehaviour
         isAttacking = false;
     }
 
-        public void OnBlock(InputValue value)
+    // Block (only works in sword+shield mode)
+    public void OnBlock(InputValue value)
     {
         bool pressed = isUsingGamepad ? value.Get<float>() > 0.5f : value.isPressed;
+        Debug.Log($"[OnBlock] called, isPressed={value.isPressed}, pressed={pressed}");
 
-        // Optional: prevent blocking while attacking unless allowed
+        // No blocking if bow is equipped
+        if (currentWeapon == WeaponType.Bow)
+            pressed = false;
+
+        // Optionally, cannot start block mid-attack
         if (isAttacking && !canBlockWhileAttacking)
             pressed = false;
 
         isBlocking = pressed;
 
-        ShieldController shield = GetComponentInChildren<ShieldController>();
-        if (shield != null)
-            shield.SetBlocking(isBlocking);
+        Debug.Log($"[OnBlock] pressed={pressed}, isBlocking={isBlocking}");
 
+        if (shieldBlock != null)
+            shieldBlock.SetBlocking(isBlocking);
 
         if (animator != null)
+        {
             animator.SetBool("IsBlocking", isBlocking);
+            Debug.Log($"[OnBlock] Animator IsBlocking set to {isBlocking}");
+        }
     }
 
 
@@ -249,7 +306,8 @@ public class SplitScreenFPSController : MonoBehaviour
             isThirdPerson = !isThirdPerson;
     }
 
-    // GROUND CHECK
+    // ---------------- GROUND / JUMP / GRAVITY ----------------
+
     void GroundCheck()
     {
         bool controllerGrounded = controller.isGrounded;
@@ -269,13 +327,10 @@ public class SplitScreenFPSController : MonoBehaviour
             lastGroundedTime = Time.time;
 
             if (!wasGrounded && animator != null)
-            {
                 animator.SetBool("IsJumping", false);
-            }
         }
     }
 
-    // JUMP
     void HandleJump()
     {
         bool cooldownReady = Time.time - lastJumpTime >= jumpCooldown;
@@ -291,7 +346,6 @@ public class SplitScreenFPSController : MonoBehaviour
         }
     }
 
-    // GRAVITY
     void ApplyGravity()
     {
         if (velocity.y < 0)
@@ -302,10 +356,11 @@ public class SplitScreenFPSController : MonoBehaviour
             velocity.y += gravity * gravityMultiplierRising * Time.deltaTime;
     }
 
-    // MOVEMENT
+    // ---------------- MOVEMENT / LOOK ----------------
+
     void HandleMovement()
     {
-        // BLOCK MOVEMENT DURING ATTACK
+        // Cancel movement while sword attacking (if desired)
         if (isAttacking && !canMoveWhileAttacking)
         {
             float stopSmooth = isGrounded ? groundedSmoothTime : airSmoothTime;
@@ -314,50 +369,31 @@ public class SplitScreenFPSController : MonoBehaviour
             return;
         }
 
-        Vector3 desiredMove =
-            transform.forward * moveInput.y +
-            transform.right * moveInput.x;
+        Vector3 desiredMove = transform.forward * moveInput.y + transform.right * moveInput.x;
+        float targetSpeed = sprintPressed ? sprintSpeed : walkSpeed;
 
-        float targetSpeed;
-
-        if (crouchPressed)
-            targetSpeed = crouchSpeed;
-        else
-            targetSpeed = sprintPressed ? sprintSpeed : walkSpeed;
-
-        // Reduce movement speed while blocking
+        // Block slowdown
         if (isBlocking)
             targetSpeed *= blockMoveSpeedMultiplier;
 
+        // Bow draw slowdown
+        if (currentWeapon == WeaponType.Bow && bowController != null && bowController.IsDrawing())
+            targetSpeed *= aimMoveSpeedMultiplier;
 
         if (desiredMove.sqrMagnitude > 1f)
             desiredMove.Normalize();
 
         Vector3 targetVelocity = desiredMove * targetSpeed;
-
         if (desiredMove.sqrMagnitude < 0.0001f)
             targetVelocity = Vector3.zero;
 
         float smoothTime = isGrounded ? groundedSmoothTime : airSmoothTime;
         float controlFactor = isGrounded ? 1f : airControl;
-
         float lerpFactor = Mathf.Clamp01(Time.deltaTime / Mathf.Max(0.0001f, smoothTime)) * controlFactor;
 
         currentMoveVelocity = Vector3.Lerp(currentMoveVelocity, targetVelocity, lerpFactor);
-
-        // Adjust height for crouching
-        float targetHeight = crouchPressed ? crouchHeight : originalHeight;
-        float heightDifference = originalHeight - targetHeight;
-        float targetCenterY = originalCenterY - (heightDifference * 0.5f);
-
-        controller.height = Mathf.Lerp(controller.height, targetHeight, Time.deltaTime * 10f);
-
-        Vector3 newCenter = controller.center;
-        newCenter.y = Mathf.Lerp(controller.center.y, targetCenterY, Time.deltaTime * 10f);
-        controller.center = newCenter;
     }
 
-    // LOOK
     void HandleLook()
     {
         if (cameraTransform == null) return;
@@ -375,7 +411,8 @@ public class SplitScreenFPSController : MonoBehaviour
         cameraPitch = Mathf.Lerp(cameraPitch, targetCameraPitch, lookSmoothing * Time.deltaTime);
     }
 
-    // CAMERA POSITION
+    // ---------------- CAMERA ----------------
+
     void UpdateCameraPosition()
     {
         if (cameraTransform == null) return;
@@ -414,13 +451,13 @@ public class SplitScreenFPSController : MonoBehaviour
         cameraTransform.rotation = camRot;
     }
 
-    // ANIMATOR
+    // ---------------- ANIMATOR ----------------
+
     void UpdateAnimator()
     {
         if (animator == null) return;
 
         float horizontalSpeed = new Vector2(currentMoveVelocity.x, currentMoveVelocity.z).magnitude;
-
         Vector3 localVelocity = transform.InverseTransformDirection(currentMoveVelocity);
         bool movingBackward = localVelocity.z < -0.1f;
 
@@ -449,10 +486,10 @@ public class SplitScreenFPSController : MonoBehaviour
             Time.deltaTime / Mathf.Max(animSpeedSmoothTime, 0.0001f));
 
         animator.SetFloat("Speed", currentAnimSpeed);
-        animator.SetBool("IsCrouching", crouchPressed);
     }
 
-    // CURSOR
+    // ---------------- UI / MISC ----------------
+
     void HandleCursor()
     {
         if (Input.GetKeyDown(KeyCode.Escape))
@@ -465,6 +502,55 @@ public class SplitScreenFPSController : MonoBehaviour
         {
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
+        }
+    }
+
+    // ---------------- WEAPON EQUIP LOGIC ----------------
+
+    private void EquipWeapon(WeaponType weapon)
+    {
+        currentWeapon = weapon;
+
+        bool swordMode = (weapon == WeaponType.SwordShield);
+        bool bowMode = (weapon == WeaponType.Bow);
+
+        // Sword visibility
+        if (swordInHandRoot != null) swordInHandRoot.SetActive(swordMode);
+        if (swordOnBackRoot != null) swordOnBackRoot.SetActive(!swordMode);
+
+        // Shield visibility
+        if (shieldInHandRoot != null) shieldInHandRoot.SetActive(swordMode);
+        if (shieldOnBackRoot != null) shieldOnBackRoot.SetActive(!swordMode);
+
+        // Bow visibility
+        if (bowInHandRoot != null) bowInHandRoot.SetActive(bowMode);
+        if (bowOnBackRoot != null) bowOnBackRoot.SetActive(!bowMode);
+
+        // Shield behaviour
+        if (shieldBlock != null)
+        {
+            if (swordMode)
+            {
+                shieldBlock.SetEquipped(true);
+                shieldBlock.SetBlocking(false);
+            }
+            else
+            {
+                shieldBlock.SetBlocking(false);
+                shieldBlock.SetEquipped(false);
+            }
+        }
+
+        // Bow behaviour
+        if (bowController != null)
+            bowController.EquipBow(bowMode);
+
+        // Animator flags
+        if (animator != null)
+        {
+            animator.SetBool("HasBow", bowMode);
+            animator.SetBool("IsBlocking", false);
+            animator.SetBool("IsAiming", false);
         }
     }
 

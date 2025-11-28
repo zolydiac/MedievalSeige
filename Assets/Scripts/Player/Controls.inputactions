@@ -39,7 +39,7 @@
                     "id": "51c34a21-05f4-40e6-a7b0-39f47e72e0ad",
                     "expectedControlType": "",
                     "processors": "",
-                    "interactions": "Hold",
+                    "interactions": "",
                     "initialStateCheck": false
                 },
                 {
@@ -61,18 +61,27 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Crouch",
+                    "name": "Block",
                     "type": "Button",
-                    "id": "da1c3488-947e-462a-8613-c7f1044cb88d",
+                    "id": "2d1abaf6-51db-428f-b61b-648cf2ef9b5d",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Block",
+                    "name": "SelectSword",
                     "type": "Button",
-                    "id": "2d1abaf6-51db-428f-b61b-648cf2ef9b5d",
+                    "id": "8ec109e9-4bc7-40ad-a0f5-e16f6f22e296",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "SelectBow",
+                    "type": "Button",
+                    "id": "cd454b8a-c2c2-43dc-8760-f161d01a1191",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -106,7 +115,7 @@
                     "name": "",
                     "id": "8d7bda23-a1b5-4ba1-87f8-3f2a093543aa",
                     "path": "<Keyboard>/shift",
-                    "interactions": "Hold(duration=0.5,pressPoint=0.5)",
+                    "interactions": "Press(behavior=2)",
                     "processors": "",
                     "groups": "",
                     "action": "Sprint",
@@ -192,34 +201,34 @@
                 },
                 {
                     "name": "",
-                    "id": "687468bf-6069-4971-9bd3-bd1f8b6b215f",
-                    "path": "<Keyboard>/leftCtrl",
+                    "id": "cb881e7d-623b-4b17-927d-323038af7f3f",
+                    "path": "<Mouse>/rightButton",
                     "interactions": "Press(behavior=2)",
                     "processors": "",
                     "groups": "",
-                    "action": "Crouch",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "cb881e7d-623b-4b17-927d-323038af7f3f",
-                    "path": "<Mouse>/rightButton",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
                     "action": "Block",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
                 {
                     "name": "",
-                    "id": "b91b1f33-011c-4913-bd3a-ae47002fa6dd",
-                    "path": "<XInputController>/rightShoulder",
+                    "id": "0a307387-e45a-4245-a5fc-22cec8e0cc33",
+                    "path": "<Keyboard>/1",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "Block",
+                    "action": "SelectSword",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "c6bd7759-0c92-484e-b977-ffe4d63db85f",
+                    "path": "<Keyboard>/2",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "SelectBow",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
@@ -236,7 +245,7 @@
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
-                    "initialStateCheck": true
+                    "initialStateCheck": false
                 },
                 {
                     "name": "Look",
@@ -284,18 +293,18 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Coruch",
+                    "name": "Block",
                     "type": "Button",
-                    "id": "98383a33-00e2-4b47-bd44-d3bde89f70c5",
+                    "id": "9fb977e7-5f34-4b5a-8bcb-064421929871",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Block",
+                    "name": "CycleWeapon",
                     "type": "Button",
-                    "id": "9fb977e7-5f34-4b5a-8bcb-064421929871",
+                    "id": "1131bb3a-1de5-4c88-8341-18b1207b7f40",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -318,7 +327,7 @@
                     "name": "",
                     "id": "8b683992-2b34-4e5c-9f16-1dc5fc368aa0",
                     "path": "<Gamepad>/leftStickPress",
-                    "interactions": "Hold",
+                    "interactions": "Press(behavior=2)",
                     "processors": "",
                     "groups": "",
                     "action": "Sprint",
@@ -449,7 +458,7 @@
                 {
                     "name": "",
                     "id": "5d544be1-a891-4ca1-b0d1-60b262110610",
-                    "path": "<XInputController>/buttonNorth",
+                    "path": "<Gamepad>/rightStickPress",
                     "interactions": "",
                     "processors": "",
                     "groups": ";Gamepad",
@@ -459,34 +468,51 @@
                 },
                 {
                     "name": "",
-                    "id": "784a48af-59d5-4721-b026-dc5073a15bff",
-                    "path": "<Gamepad>/buttonEast",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Coruch",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "79d5635a-5b59-4ec8-9d04-dbd57ede303c",
-                    "path": "<Mouse>/rightButton",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Block",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "f16eb298-c032-4428-bb58-cfd8ca95cac1",
-                    "path": "<XInputController>/rightShoulder",
-                    "interactions": "",
+                    "path": "<Gamepad>/leftTrigger",
+                    "interactions": "Press(behavior=2)",
                     "processors": "",
                     "groups": "",
                     "action": "Block",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "e73ba32f-3aa1-43d6-9fff-a4bed8e06e62",
+                    "path": "<Gamepad>/buttonNorth",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "CycleWeapon",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        },
+        {
+            "name": "UI",
+            "id": "9f60d186-3128-43a7-8b29-f3f609fd85c0",
+            "actions": [
+                {
+                    "name": "New action",
+                    "type": "Button",
+                    "id": "f8789f05-3ec7-4c58-92ec-290bb3031220",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "76620e3d-0527-41be-ac33-24532203e85b",
+                    "path": "",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "New action",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

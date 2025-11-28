@@ -125,7 +125,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""id"": ""51c34a21-05f4-40e6-a7b0-39f47e72e0ad"",
                     ""expectedControlType"": """",
                     ""processors"": """",
-                    ""interactions"": ""Hold"",
+                    ""interactions"": """",
                     ""initialStateCheck"": false
                 },
                 {
@@ -147,18 +147,27 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""initialStateCheck"": false
                 },
                 {
-                    ""name"": ""Crouch"",
+                    ""name"": ""Block"",
                     ""type"": ""Button"",
-                    ""id"": ""da1c3488-947e-462a-8613-c7f1044cb88d"",
+                    ""id"": ""2d1abaf6-51db-428f-b61b-648cf2ef9b5d"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
                 },
                 {
-                    ""name"": ""Block"",
+                    ""name"": ""SelectSword"",
                     ""type"": ""Button"",
-                    ""id"": ""2d1abaf6-51db-428f-b61b-648cf2ef9b5d"",
+                    ""id"": ""8ec109e9-4bc7-40ad-a0f5-e16f6f22e296"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""SelectBow"",
+                    ""type"": ""Button"",
+                    ""id"": ""cd454b8a-c2c2-43dc-8760-f161d01a1191"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
@@ -192,7 +201,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""name"": """",
                     ""id"": ""8d7bda23-a1b5-4ba1-87f8-3f2a093543aa"",
                     ""path"": ""<Keyboard>/shift"",
-                    ""interactions"": ""Hold(duration=0.5,pressPoint=0.5)"",
+                    ""interactions"": ""Press(behavior=2)"",
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""Sprint"",
@@ -278,34 +287,34 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": """",
-                    ""id"": ""687468bf-6069-4971-9bd3-bd1f8b6b215f"",
-                    ""path"": ""<Keyboard>/leftCtrl"",
+                    ""id"": ""cb881e7d-623b-4b17-927d-323038af7f3f"",
+                    ""path"": ""<Mouse>/rightButton"",
                     ""interactions"": ""Press(behavior=2)"",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""Crouch"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
-                    ""id"": ""cb881e7d-623b-4b17-927d-323038af7f3f"",
-                    ""path"": ""<Mouse>/rightButton"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
                     ""action"": ""Block"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
                 {
                     ""name"": """",
-                    ""id"": ""b91b1f33-011c-4913-bd3a-ae47002fa6dd"",
-                    ""path"": ""<XInputController>/rightShoulder"",
+                    ""id"": ""0a307387-e45a-4245-a5fc-22cec8e0cc33"",
+                    ""path"": ""<Keyboard>/1"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""Block"",
+                    ""action"": ""SelectSword"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""c6bd7759-0c92-484e-b977-ffe4d63db85f"",
+                    ""path"": ""<Keyboard>/2"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""SelectBow"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -322,7 +331,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
-                    ""initialStateCheck"": true
+                    ""initialStateCheck"": false
                 },
                 {
                     ""name"": ""Look"",
@@ -370,18 +379,18 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""initialStateCheck"": false
                 },
                 {
-                    ""name"": ""Coruch"",
+                    ""name"": ""Block"",
                     ""type"": ""Button"",
-                    ""id"": ""98383a33-00e2-4b47-bd44-d3bde89f70c5"",
+                    ""id"": ""9fb977e7-5f34-4b5a-8bcb-064421929871"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
                 },
                 {
-                    ""name"": ""Block"",
+                    ""name"": ""CycleWeapon"",
                     ""type"": ""Button"",
-                    ""id"": ""9fb977e7-5f34-4b5a-8bcb-064421929871"",
+                    ""id"": ""1131bb3a-1de5-4c88-8341-18b1207b7f40"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
@@ -404,7 +413,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""name"": """",
                     ""id"": ""8b683992-2b34-4e5c-9f16-1dc5fc368aa0"",
                     ""path"": ""<Gamepad>/leftStickPress"",
-                    ""interactions"": ""Hold"",
+                    ""interactions"": ""Press(behavior=2)"",
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""Sprint"",
@@ -535,7 +544,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""5d544be1-a891-4ca1-b0d1-60b262110610"",
-                    ""path"": ""<XInputController>/buttonNorth"",
+                    ""path"": ""<Gamepad>/rightStickPress"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": "";Gamepad"",
@@ -545,34 +554,51 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": """",
-                    ""id"": ""784a48af-59d5-4721-b026-dc5073a15bff"",
-                    ""path"": ""<Gamepad>/buttonEast"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""Coruch"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
-                    ""id"": ""79d5635a-5b59-4ec8-9d04-dbd57ede303c"",
-                    ""path"": ""<Mouse>/rightButton"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""Block"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
                     ""id"": ""f16eb298-c032-4428-bb58-cfd8ca95cac1"",
-                    ""path"": ""<XInputController>/rightShoulder"",
-                    ""interactions"": """",
+                    ""path"": ""<Gamepad>/leftTrigger"",
+                    ""interactions"": ""Press(behavior=2)"",
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""Block"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""e73ba32f-3aa1-43d6-9fff-a4bed8e06e62"",
+                    ""path"": ""<Gamepad>/buttonNorth"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""CycleWeapon"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                }
+            ]
+        },
+        {
+            ""name"": ""UI"",
+            ""id"": ""9f60d186-3128-43a7-8b29-f3f609fd85c0"",
+            ""actions"": [
+                {
+                    ""name"": ""New action"",
+                    ""type"": ""Button"",
+                    ""id"": ""f8789f05-3ec7-4c58-92ec-290bb3031220"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": """",
+                    ""id"": ""76620e3d-0527-41be-ac33-24532203e85b"",
+                    ""path"": """",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""New action"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -617,8 +643,9 @@ public partial class @Controls: IInputActionCollection2, IDisposable
         m_Player1_Sprint = m_Player1.FindAction("Sprint", throwIfNotFound: true);
         m_Player1_attack = m_Player1.FindAction("attack", throwIfNotFound: true);
         m_Player1_ToggleView = m_Player1.FindAction("ToggleView", throwIfNotFound: true);
-        m_Player1_Crouch = m_Player1.FindAction("Crouch", throwIfNotFound: true);
         m_Player1_Block = m_Player1.FindAction("Block", throwIfNotFound: true);
+        m_Player1_SelectSword = m_Player1.FindAction("SelectSword", throwIfNotFound: true);
+        m_Player1_SelectBow = m_Player1.FindAction("SelectBow", throwIfNotFound: true);
         // Player2
         m_Player2 = asset.FindActionMap("Player2", throwIfNotFound: true);
         m_Player2_Move = m_Player2.FindAction("Move", throwIfNotFound: true);
@@ -627,14 +654,18 @@ public partial class @Controls: IInputActionCollection2, IDisposable
         m_Player2_Sprint = m_Player2.FindAction("Sprint", throwIfNotFound: true);
         m_Player2_attack = m_Player2.FindAction("attack", throwIfNotFound: true);
         m_Player2_ToggleView = m_Player2.FindAction("ToggleView", throwIfNotFound: true);
-        m_Player2_Coruch = m_Player2.FindAction("Coruch", throwIfNotFound: true);
         m_Player2_Block = m_Player2.FindAction("Block", throwIfNotFound: true);
+        m_Player2_CycleWeapon = m_Player2.FindAction("CycleWeapon", throwIfNotFound: true);
+        // UI
+        m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
+        m_UI_Newaction = m_UI.FindAction("New action", throwIfNotFound: true);
     }
 
     ~@Controls()
     {
         UnityEngine.Debug.Assert(!m_Player1.enabled, "This will cause a leak and performance issues, Controls.Player1.Disable() has not been called.");
         UnityEngine.Debug.Assert(!m_Player2.enabled, "This will cause a leak and performance issues, Controls.Player2.Disable() has not been called.");
+        UnityEngine.Debug.Assert(!m_UI.enabled, "This will cause a leak and performance issues, Controls.UI.Disable() has not been called.");
     }
 
     /// <summary>
@@ -716,8 +747,9 @@ public partial class @Controls: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player1_Sprint;
     private readonly InputAction m_Player1_attack;
     private readonly InputAction m_Player1_ToggleView;
-    private readonly InputAction m_Player1_Crouch;
     private readonly InputAction m_Player1_Block;
+    private readonly InputAction m_Player1_SelectSword;
+    private readonly InputAction m_Player1_SelectBow;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player1".
     /// </summary>
@@ -754,13 +786,17 @@ public partial class @Controls: IInputActionCollection2, IDisposable
         /// </summary>
         public InputAction @ToggleView => m_Wrapper.m_Player1_ToggleView;
         /// <summary>
-        /// Provides access to the underlying input action "Player1/Crouch".
-        /// </summary>
-        public InputAction @Crouch => m_Wrapper.m_Player1_Crouch;
-        /// <summary>
         /// Provides access to the underlying input action "Player1/Block".
         /// </summary>
         public InputAction @Block => m_Wrapper.m_Player1_Block;
+        /// <summary>
+        /// Provides access to the underlying input action "Player1/SelectSword".
+        /// </summary>
+        public InputAction @SelectSword => m_Wrapper.m_Player1_SelectSword;
+        /// <summary>
+        /// Provides access to the underlying input action "Player1/SelectBow".
+        /// </summary>
+        public InputAction @SelectBow => m_Wrapper.m_Player1_SelectBow;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -805,12 +841,15 @@ public partial class @Controls: IInputActionCollection2, IDisposable
             @ToggleView.started += instance.OnToggleView;
             @ToggleView.performed += instance.OnToggleView;
             @ToggleView.canceled += instance.OnToggleView;
-            @Crouch.started += instance.OnCrouch;
-            @Crouch.performed += instance.OnCrouch;
-            @Crouch.canceled += instance.OnCrouch;
             @Block.started += instance.OnBlock;
             @Block.performed += instance.OnBlock;
             @Block.canceled += instance.OnBlock;
+            @SelectSword.started += instance.OnSelectSword;
+            @SelectSword.performed += instance.OnSelectSword;
+            @SelectSword.canceled += instance.OnSelectSword;
+            @SelectBow.started += instance.OnSelectBow;
+            @SelectBow.performed += instance.OnSelectBow;
+            @SelectBow.canceled += instance.OnSelectBow;
         }
 
         /// <summary>
@@ -840,12 +879,15 @@ public partial class @Controls: IInputActionCollection2, IDisposable
             @ToggleView.started -= instance.OnToggleView;
             @ToggleView.performed -= instance.OnToggleView;
             @ToggleView.canceled -= instance.OnToggleView;
-            @Crouch.started -= instance.OnCrouch;
-            @Crouch.performed -= instance.OnCrouch;
-            @Crouch.canceled -= instance.OnCrouch;
             @Block.started -= instance.OnBlock;
             @Block.performed -= instance.OnBlock;
             @Block.canceled -= instance.OnBlock;
+            @SelectSword.started -= instance.OnSelectSword;
+            @SelectSword.performed -= instance.OnSelectSword;
+            @SelectSword.canceled -= instance.OnSelectSword;
+            @SelectBow.started -= instance.OnSelectBow;
+            @SelectBow.performed -= instance.OnSelectBow;
+            @SelectBow.canceled -= instance.OnSelectBow;
         }
 
         /// <summary>
@@ -889,8 +931,8 @@ public partial class @Controls: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player2_Sprint;
     private readonly InputAction m_Player2_attack;
     private readonly InputAction m_Player2_ToggleView;
-    private readonly InputAction m_Player2_Coruch;
     private readonly InputAction m_Player2_Block;
+    private readonly InputAction m_Player2_CycleWeapon;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player2".
     /// </summary>
@@ -927,13 +969,13 @@ public partial class @Controls: IInputActionCollection2, IDisposable
         /// </summary>
         public InputAction @ToggleView => m_Wrapper.m_Player2_ToggleView;
         /// <summary>
-        /// Provides access to the underlying input action "Player2/Coruch".
-        /// </summary>
-        public InputAction @Coruch => m_Wrapper.m_Player2_Coruch;
-        /// <summary>
         /// Provides access to the underlying input action "Player2/Block".
         /// </summary>
         public InputAction @Block => m_Wrapper.m_Player2_Block;
+        /// <summary>
+        /// Provides access to the underlying input action "Player2/CycleWeapon".
+        /// </summary>
+        public InputAction @CycleWeapon => m_Wrapper.m_Player2_CycleWeapon;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -978,12 +1020,12 @@ public partial class @Controls: IInputActionCollection2, IDisposable
             @ToggleView.started += instance.OnToggleView;
             @ToggleView.performed += instance.OnToggleView;
             @ToggleView.canceled += instance.OnToggleView;
-            @Coruch.started += instance.OnCoruch;
-            @Coruch.performed += instance.OnCoruch;
-            @Coruch.canceled += instance.OnCoruch;
             @Block.started += instance.OnBlock;
             @Block.performed += instance.OnBlock;
             @Block.canceled += instance.OnBlock;
+            @CycleWeapon.started += instance.OnCycleWeapon;
+            @CycleWeapon.performed += instance.OnCycleWeapon;
+            @CycleWeapon.canceled += instance.OnCycleWeapon;
         }
 
         /// <summary>
@@ -1013,12 +1055,12 @@ public partial class @Controls: IInputActionCollection2, IDisposable
             @ToggleView.started -= instance.OnToggleView;
             @ToggleView.performed -= instance.OnToggleView;
             @ToggleView.canceled -= instance.OnToggleView;
-            @Coruch.started -= instance.OnCoruch;
-            @Coruch.performed -= instance.OnCoruch;
-            @Coruch.canceled -= instance.OnCoruch;
             @Block.started -= instance.OnBlock;
             @Block.performed -= instance.OnBlock;
             @Block.canceled -= instance.OnBlock;
+            @CycleWeapon.started -= instance.OnCycleWeapon;
+            @CycleWeapon.performed -= instance.OnCycleWeapon;
+            @CycleWeapon.canceled -= instance.OnCycleWeapon;
         }
 
         /// <summary>
@@ -1052,6 +1094,102 @@ public partial class @Controls: IInputActionCollection2, IDisposable
     /// Provides a new <see cref="Player2Actions" /> instance referencing this action map.
     /// </summary>
     public Player2Actions @Player2 => new Player2Actions(this);
+
+    // UI
+    private readonly InputActionMap m_UI;
+    private List<IUIActions> m_UIActionsCallbackInterfaces = new List<IUIActions>();
+    private readonly InputAction m_UI_Newaction;
+    /// <summary>
+    /// Provides access to input actions defined in input action map "UI".
+    /// </summary>
+    public struct UIActions
+    {
+        private @Controls m_Wrapper;
+
+        /// <summary>
+        /// Construct a new instance of the input action map wrapper class.
+        /// </summary>
+        public UIActions(@Controls wrapper) { m_Wrapper = wrapper; }
+        /// <summary>
+        /// Provides access to the underlying input action "UI/Newaction".
+        /// </summary>
+        public InputAction @Newaction => m_Wrapper.m_UI_Newaction;
+        /// <summary>
+        /// Provides access to the underlying input action map instance.
+        /// </summary>
+        public InputActionMap Get() { return m_Wrapper.m_UI; }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Enable()" />
+        public void Enable() { Get().Enable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Disable()" />
+        public void Disable() { Get().Disable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.enabled" />
+        public bool enabled => Get().enabled;
+        /// <summary>
+        /// Implicitly converts an <see ref="UIActions" /> to an <see ref="InputActionMap" /> instance.
+        /// </summary>
+        public static implicit operator InputActionMap(UIActions set) { return set.Get(); }
+        /// <summary>
+        /// Adds <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <param name="instance">Callback instance.</param>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c> or <paramref name="instance"/> have already been added this method does nothing.
+        /// </remarks>
+        /// <seealso cref="UIActions" />
+        public void AddCallbacks(IUIActions instance)
+        {
+            if (instance == null || m_Wrapper.m_UIActionsCallbackInterfaces.Contains(instance)) return;
+            m_Wrapper.m_UIActionsCallbackInterfaces.Add(instance);
+            @Newaction.started += instance.OnNewaction;
+            @Newaction.performed += instance.OnNewaction;
+            @Newaction.canceled += instance.OnNewaction;
+        }
+
+        /// <summary>
+        /// Removes <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <remarks>
+        /// Calling this method when <paramref name="instance" /> have not previously been registered has no side-effects.
+        /// </remarks>
+        /// <seealso cref="UIActions" />
+        private void UnregisterCallbacks(IUIActions instance)
+        {
+            @Newaction.started -= instance.OnNewaction;
+            @Newaction.performed -= instance.OnNewaction;
+            @Newaction.canceled -= instance.OnNewaction;
+        }
+
+        /// <summary>
+        /// Unregisters <param cref="instance" /> and unregisters all input action callbacks via <see cref="UIActions.UnregisterCallbacks(IUIActions)" />.
+        /// </summary>
+        /// <seealso cref="UIActions.UnregisterCallbacks(IUIActions)" />
+        public void RemoveCallbacks(IUIActions instance)
+        {
+            if (m_Wrapper.m_UIActionsCallbackInterfaces.Remove(instance))
+                UnregisterCallbacks(instance);
+        }
+
+        /// <summary>
+        /// Replaces all existing callback instances and previously registered input action callbacks associated with them with callbacks provided via <param cref="instance" />.
+        /// </summary>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c>, calling this method will only unregister all existing callbacks but not register any new callbacks.
+        /// </remarks>
+        /// <seealso cref="UIActions.AddCallbacks(IUIActions)" />
+        /// <seealso cref="UIActions.RemoveCallbacks(IUIActions)" />
+        /// <seealso cref="UIActions.UnregisterCallbacks(IUIActions)" />
+        public void SetCallbacks(IUIActions instance)
+        {
+            foreach (var item in m_Wrapper.m_UIActionsCallbackInterfaces)
+                UnregisterCallbacks(item);
+            m_Wrapper.m_UIActionsCallbackInterfaces.Clear();
+            AddCallbacks(instance);
+        }
+    }
+    /// <summary>
+    /// Provides a new <see cref="UIActions" /> instance referencing this action map.
+    /// </summary>
+    public UIActions @UI => new UIActions(this);
     private int m_KeyboardMouseSchemeIndex = -1;
     /// <summary>
     /// Provides access to the input control scheme.
@@ -1128,19 +1266,26 @@ public partial class @Controls: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnToggleView(InputAction.CallbackContext context);
         /// <summary>
-        /// Method invoked when associated input action "Crouch" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-        /// </summary>
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnCrouch(InputAction.CallbackContext context);
-        /// <summary>
         /// Method invoked when associated input action "Block" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>
         /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnBlock(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "SelectSword" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnSelectSword(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "SelectBow" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnSelectBow(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Player2" which allows adding and removing callbacks.
@@ -1192,18 +1337,33 @@ public partial class @Controls: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnToggleView(InputAction.CallbackContext context);
         /// <summary>
-        /// Method invoked when associated input action "Coruch" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-        /// </summary>
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnCoruch(InputAction.CallbackContext context);
-        /// <summary>
         /// Method invoked when associated input action "Block" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>
         /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnBlock(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "CycleWeapon" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnCycleWeapon(InputAction.CallbackContext context);
+    }
+    /// <summary>
+    /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "UI" which allows adding and removing callbacks.
+    /// </summary>
+    /// <seealso cref="UIActions.AddCallbacks(IUIActions)" />
+    /// <seealso cref="UIActions.RemoveCallbacks(IUIActions)" />
+    public interface IUIActions
+    {
+        /// <summary>
+        /// Method invoked when associated input action "New action" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnNewaction(InputAction.CallbackContext context);
     }
 }
