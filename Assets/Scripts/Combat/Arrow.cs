@@ -20,9 +20,12 @@ public class Arrow : MonoBehaviour
 
     void Awake()
     {
-        // IMPORTANT: grab the Rigidbody here so it's ready before Launch() is called
         rb = GetComponent<Rigidbody>();
         audioSource = GetComponent<AudioSource>();
+
+        // IMPORTANT: make sure physics is actually active
+        rb.isKinematic = false;
+        rb.useGravity = true;
     }
 
     void Start()
@@ -60,6 +63,8 @@ public class Arrow : MonoBehaviour
 
         rb.isKinematic = false;
         rb.useGravity = true;
+
+        // IMPORTANT: use Rigidbody.velocity, not linearVelocity
         rb.linearVelocity = direction.normalized * speed;
     }
 
@@ -117,3 +122,4 @@ public class Arrow : MonoBehaviour
             col.enabled = false;
     }
 }
+

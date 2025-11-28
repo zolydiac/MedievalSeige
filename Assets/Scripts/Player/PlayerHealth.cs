@@ -1,6 +1,5 @@
 using System.Collections;
 using UnityEngine;
-using System;
 
 public class PlayerHealth : MonoBehaviour
 {
@@ -22,26 +21,38 @@ public class PlayerHealth : MonoBehaviour
     [SerializeField] private string deathStateOrClipName = "HumanM@Death01";
 
     [Header("Death Settings")]
-    [Tooltip("Disables CharacterController after death animation finishes.")]
-    [SerializeField] private bool disableCharacterController = true;
-
-    [Tooltip("Extra time after animation completes before disabling physics.")]
+    [Tooltip("Extra time after animation completes before we tell the RoundManager.")]
     [SerializeField] private float postDeathDelay = 0.1f;
 
-    // Event fired BEFORE health is reduced (for shield effects)
-    public event Action<int> OnDamageTakenRaw;
+    [Tooltip("Fallback length if we can't find the death clip.")]
+    [SerializeField] private float fallbackDeathLength = 1.5f;
 
-    // References
-    private ShieldBlock shieldBlock;
-    private SplitScreenFPSController fpsController;
-
-    // Animator parameter validation
+    // Internal flags
     private bool animatorHasHitTrigger = false;
     private bool animatorHasDeathBool = false;
+
+    // Cached components
+    private SplitScreenFPSController controller;
+    private CharacterController characterController;
+    private SwordDamage sword;
+
+    // For respawn
+    private Vector3 startPosition;
+    private Quaternion startRotation;
 
     public int MaxHealth => maxHealth;
     public int CurrentHealth => currentHealth;
     public bool IsDead => isDead;
+
+    void Awake()
+    {
+        controller = GetComponent<SplitScreenFPSController>();
+        characterController = GetComponent<CharacterController>();
+        sword = GetComponentInChildren<SwordDamage>();
+
+        startPosition = transform.position;
+        startRotation = transform.rotation;
+    }
 
     void Start()
     {
@@ -52,11 +63,10 @@ public class PlayerHealth : MonoBehaviour
 
         if (animator == null)
         {
-            Debug.LogError($"[PlayerHealth] No Animator found on {name}!");
+            Debug.LogError($"[PlayerHealth] No Animator found on {name} or children!");
             return;
         }
 
-        // Validate Animator parameters
         foreach (var p in animator.parameters)
         {
             if (p.name == hitTriggerName && p.type == AnimatorControllerParameterType.Trigger)
@@ -67,33 +77,23 @@ public class PlayerHealth : MonoBehaviour
         }
 
         if (!animatorHasHitTrigger)
-            Debug.LogWarning($"[PlayerHealth] Hit trigger '{hitTriggerName}' not found!");
+            Debug.LogWarning($"[PlayerHealth] Hit trigger '{hitTriggerName}' not found. Hit animation will be skipped.");
 
         if (!animatorHasDeathBool)
-            Debug.LogWarning($"[PlayerHealth] Death bool '{deathBoolName}' not found!");
-
-        // Reference to controller & shield
-        fpsController = GetComponent<SplitScreenFPSController>();
-        shieldBlock = GetComponentInChildren<ShieldBlock>();
+            Debug.LogWarning($"[PlayerHealth] Death bool '{deathBoolName}' not found. Death animation will not activate!");
     }
 
     // -----------------------------------------------------------------------
     // DAMAGE
     // -----------------------------------------------------------------------
-    public void TakeDamage(int rawDamage)
+    public void TakeDamage(int amount)
     {
         if (isDead)
             return;
 
-        // Notify listeners (ShieldBlock will use raw damage for special effects only)
-        OnDamageTakenRaw?.Invoke(rawDamage);
-
-        int finalDamage = ApplyShieldReduction(rawDamage);
-
-        currentHealth -= finalDamage;
+        currentHealth -= amount;
         currentHealth = Mathf.Max(0, currentHealth);
-
-        Debug.Log($"[PlayerHealth] {name} took {finalDamage} damage. HP = {currentHealth}/{maxHealth}");
+        Debug.Log($"[PlayerHealth] {name} took {amount} damage. HP = {currentHealth}/{maxHealth}");
 
         if (currentHealth <= 0)
         {
@@ -101,36 +101,8 @@ public class PlayerHealth : MonoBehaviour
             return;
         }
 
-        // Play damage animation
         if (animatorHasHitTrigger)
             animator.SetTrigger(hitTriggerName);
-    }
-
-    // Apply shield reduction ONLY when blocking
-    private int ApplyShieldReduction(int damage)
-    {
-        if (shieldBlock == null || !shieldBlock.IsBlocking())
-            return damage;
-
-        float reductionPercent = shieldBlock.GetDamageReductionPercent();
-        int finalDamage = Mathf.RoundToInt(damage * (1f - reductionPercent / 100f));
-
-        Debug.Log($"[PlayerHealth] Shield reduced damage from {damage} to {finalDamage}");
-
-        return finalDamage;
-    }
-
-    // -----------------------------------------------------------------------
-    // HEALING
-    // -----------------------------------------------------------------------
-    public void Heal(int amount)
-    {
-        if (isDead) return;
-
-        currentHealth += amount;
-        currentHealth = Mathf.Min(currentHealth, maxHealth);
-
-        Debug.Log($"[PlayerHealth] Player healed {amount}. Health = {currentHealth}/{maxHealth}");
     }
 
     // -----------------------------------------------------------------------
@@ -141,56 +113,91 @@ public class PlayerHealth : MonoBehaviour
         if (isDead) return;
         isDead = true;
 
-        Debug.Log($"[PlayerHealth] {name} died.");
+        Debug.Log($"[PlayerHealth] {name} DIED.");
 
-        // Disable player movement
-        if (fpsController != null)
-            fpsController.enabled = false;
+        // Disable live control & weapon
+        if (controller != null) controller.enabled = false;
+        if (sword != null) sword.DisableDamage();
 
-        // Trigger animation
         if (animatorHasDeathBool)
             animator.SetBool(deathBoolName, true);
 
         float duration = GetDeathAnimationLength();
         Debug.Log($"[PlayerHealth] Death animation length = {duration}s");
 
-        StartCoroutine(DisableAfterDelay(duration + postDeathDelay));
+        StartCoroutine(NotifyDeathAfterDelay(duration + postDeathDelay));
     }
 
     private float GetDeathAnimationLength()
     {
-        if (animator == null) return 1.5f;
+        if (animator == null || animator.runtimeAnimatorController == null)
+            return fallbackDeathLength;
 
-        RuntimeAnimatorController rac = animator.runtimeAnimatorController;
-
-        foreach (var clip in rac.animationClips)
+        foreach (var clip in animator.runtimeAnimatorController.animationClips)
         {
             if (clip.name == deathStateOrClipName)
                 return clip.length;
         }
 
-        Debug.LogWarning($"[PlayerHealth] Could not find death clip '{deathStateOrClipName}'. Using fallback 1.5s.");
-        return 1.5f;
+        Debug.LogWarning($"[PlayerHealth] Could not find death clip '{deathStateOrClipName}'. Using fallback {fallbackDeathLength}s.");
+        return fallbackDeathLength;
     }
 
-    private IEnumerator DisableAfterDelay(float delay)
+    private IEnumerator NotifyDeathAfterDelay(float delay)
     {
         yield return new WaitForSeconds(delay);
 
-        if (disableCharacterController)
+        // Let the RoundManager handle scores + respawn
+        if (RoundManager.Instance != null)
         {
-            CharacterController cc = GetComponent<CharacterController>();
-            if (cc != null)
-            {
-                cc.enabled = false;
-                Debug.Log("[PlayerHealth] CharacterController disabled after death animation.");
-            }
+            RoundManager.Instance.OnPlayerDied(this);
+        }
+        else
+        {
+            Debug.LogWarning("[PlayerHealth] No RoundManager in scene, player will never respawn.");
         }
     }
 
     // -----------------------------------------------------------------------
-    // PUBLIC GETTERS
+    // RESPAWN (called by RoundManager)
     // -----------------------------------------------------------------------
-    public int GetCurrentHealth() => currentHealth;
-    public int GetMaxHealth() => maxHealth;
+    public void RespawnAt(Transform spawnPoint)
+    {
+        // Turn off CC while we teleport
+        if (characterController != null)
+            characterController.enabled = false;
+
+        if (spawnPoint != null)
+        {
+            transform.position = spawnPoint.position;
+            transform.rotation = spawnPoint.rotation;
+        }
+        else
+        {
+            transform.position = startPosition;
+            transform.rotation = startRotation;
+        }
+
+        if (characterController != null)
+            characterController.enabled = true;
+
+        // Reset state
+        currentHealth = maxHealth;
+        isDead = false;
+
+        if (animatorHasDeathBool)
+            animator.SetBool(deathBoolName, false);
+
+        if (animator != null)
+            animator.Play("idle", 0, 0f); // change "idle" if your idle state has a different name
+
+        if (controller != null)
+            controller.enabled = true;
+
+        if (sword != null)
+            sword.EnableDamage();
+
+        Debug.Log($"[PlayerHealth] {name} respawned.");
+    }
 }
+

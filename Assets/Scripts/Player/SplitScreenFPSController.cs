@@ -10,6 +10,9 @@ public class SplitScreenFPSController : MonoBehaviour
     [SerializeField] private int playerNumber = 1;
     [SerializeField] private PlayerInput playerInput;
 
+    [Header("UI References")]
+    [SerializeField] private WeaponHotbarUI hotbarUI; // NEW: Reference to hotbar UI
+
     [Header("Movement Settings")]
     [SerializeField] private float walkSpeed = 6f;
     [SerializeField] private float sprintSpeed = 10f;
@@ -58,19 +61,19 @@ public class SplitScreenFPSController : MonoBehaviour
     [SerializeField] private bool canBlockWhileAttacking = false;
 
     [Header("Aiming / Bow Settings")]
-    [SerializeField] private float aimMoveSpeedMultiplier = 0.6f; // speed while drawing bow
+    [SerializeField] private float aimMoveSpeedMultiplier = 0.6f;
 
     [Header("Sword References")]
-    [SerializeField] private GameObject swordInHandRoot;   // Sword in hand (child of hand bone)
-    [SerializeField] private GameObject swordOnBackRoot;   // Sword on back (child of spine bone)
+    [SerializeField] private GameObject swordInHandRoot;
+    [SerializeField] private GameObject swordOnBackRoot;
 
     [Header("Shield References")]
-    [SerializeField] private GameObject shieldInHandRoot;  // Shield in hand
-    [SerializeField] private GameObject shieldOnBackRoot;  // Shield on back
+    [SerializeField] private GameObject shieldInHandRoot;
+    [SerializeField] private GameObject shieldOnBackRoot;
 
     [Header("Bow References")]
-    [SerializeField] private GameObject bowInHandRoot;     // Bow in hand
-    [SerializeField] private GameObject bowOnBackRoot;     // Bow on back
+    [SerializeField] private GameObject bowInHandRoot;
+    [SerializeField] private GameObject bowOnBackRoot;
 
     // Input state
     private Vector2 moveInput;
@@ -179,7 +182,6 @@ public class SplitScreenFPSController : MonoBehaviour
         if (playerNumber == 1)
             HandleCursor();
 
-        // reset per-frame flags
         jumpRequested = false;
     }
 
@@ -200,7 +202,6 @@ public class SplitScreenFPSController : MonoBehaviour
         sprintPressed = isUsingGamepad ? value.Get<float>() > 0.5f : value.isPressed;
     }
 
-    // Keyboard weapon select
     public void OnSelectSword(InputValue value)
     {
         if (!value.isPressed) return;
@@ -213,7 +214,6 @@ public class SplitScreenFPSController : MonoBehaviour
         EquipWeapon(WeaponType.Bow);
     }
 
-    // Gamepad weapon cycle (Y / Triangle)
     public void OnCycleWeapon(InputValue value)
     {
         if (!value.isPressed) return;
@@ -224,19 +224,14 @@ public class SplitScreenFPSController : MonoBehaviour
         EquipWeapon(nextWeapon);
     }
 
-    // Attack:
-    // - Sword mode: press = swing
-    // - Bow mode: press = start draw, release = fire
     public void OnAttack(InputValue value)
     {
         bool pressed = isUsingGamepad ? value.Get<float>() > 0.5f : value.isPressed;
 
-        // Sword & shield mode
         if (currentWeapon == WeaponType.SwordShield)
         {
             if (pressed && !isAttacking)
             {
-                // Stop blocking if we were
                 isBlocking = false;
                 if (shieldBlock != null) shieldBlock.SetBlocking(false);
                 if (animator != null) animator.SetBool("IsBlocking", false);
@@ -255,50 +250,37 @@ public class SplitScreenFPSController : MonoBehaviour
         }
         else // Bow mode
         {
-            if (!pressed) return;           // only react on press now
+            if (!pressed) return;
             if (bowController == null) return;
             if (!bowController.IsEquipped()) return;
 
-            // Fire a quick shot on press
             bowController.QuickShot();
         }
     }
-
-
 
     private void EndAttack()
     {
         isAttacking = false;
     }
 
-    // Block (only works in sword+shield mode)
     public void OnBlock(InputValue value)
     {
         bool pressed = isUsingGamepad ? value.Get<float>() > 0.5f : value.isPressed;
-        Debug.Log($"[OnBlock] called, isPressed={value.isPressed}, pressed={pressed}");
 
-        // No blocking if bow is equipped
         if (currentWeapon == WeaponType.Bow)
             pressed = false;
 
-        // Optionally, cannot start block mid-attack
         if (isAttacking && !canBlockWhileAttacking)
             pressed = false;
 
         isBlocking = pressed;
 
-        Debug.Log($"[OnBlock] pressed={pressed}, isBlocking={isBlocking}");
-
         if (shieldBlock != null)
             shieldBlock.SetBlocking(isBlocking);
 
         if (animator != null)
-        {
             animator.SetBool("IsBlocking", isBlocking);
-            Debug.Log($"[OnBlock] Animator IsBlocking set to {isBlocking}");
-        }
     }
-
 
     public void OnToggleView(InputValue value)
     {
@@ -360,7 +342,6 @@ public class SplitScreenFPSController : MonoBehaviour
 
     void HandleMovement()
     {
-        // Cancel movement while sword attacking (if desired)
         if (isAttacking && !canMoveWhileAttacking)
         {
             float stopSmooth = isGrounded ? groundedSmoothTime : airSmoothTime;
@@ -372,11 +353,9 @@ public class SplitScreenFPSController : MonoBehaviour
         Vector3 desiredMove = transform.forward * moveInput.y + transform.right * moveInput.x;
         float targetSpeed = sprintPressed ? sprintSpeed : walkSpeed;
 
-        // Block slowdown
         if (isBlocking)
             targetSpeed *= blockMoveSpeedMultiplier;
 
-        // Bow draw slowdown
         if (currentWeapon == WeaponType.Bow && bowController != null && bowController.IsDrawing())
             targetSpeed *= aimMoveSpeedMultiplier;
 
@@ -551,6 +530,13 @@ public class SplitScreenFPSController : MonoBehaviour
             animator.SetBool("HasBow", bowMode);
             animator.SetBool("IsBlocking", false);
             animator.SetBool("IsAiming", false);
+        }
+
+        // NEW: Update hotbar UI
+        if (hotbarUI != null)
+        {
+            int weaponIndex = (weapon == WeaponType.SwordShield) ? 0 : 1;
+            hotbarUI.SelectWeapon(weaponIndex);
         }
     }
 

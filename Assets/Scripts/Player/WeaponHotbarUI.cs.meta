@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 0e2ef1c148aa54cf4a1c8a4cd4f9f7fb
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - hotbarPanel: {instanceID: 0}
+  - swordShieldIcon: {fileID: 21300000, guid: d96c8811f4c6f499c8b3badef4ffc7ea, type: 3}
+  - bowIcon: {fileID: 21300000, guid: f5a8e6f4b5cb345da8feccc0476f6579, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
