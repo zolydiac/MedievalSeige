@@ -35,6 +35,7 @@ public class PlayerHealth : MonoBehaviour
     private SplitScreenFPSController controller;
     private CharacterController characterController;
     private SwordDamage sword;
+    private ShieldBlock shieldBlock;   // NEW
 
     // For respawn
     private Vector3 startPosition;
@@ -49,6 +50,7 @@ public class PlayerHealth : MonoBehaviour
         controller = GetComponent<SplitScreenFPSController>();
         characterController = GetComponent<CharacterController>();
         sword = GetComponentInChildren<SwordDamage>();
+        shieldBlock = GetComponentInChildren<ShieldBlock>();   // NEW
 
         startPosition = transform.position;
         startRotation = transform.rotation;
@@ -84,16 +86,34 @@ public class PlayerHealth : MonoBehaviour
     }
 
     // -----------------------------------------------------------------------
-    // DAMAGE
+    // DAMAGE (with shield reduction)
     // -----------------------------------------------------------------------
     public void TakeDamage(int amount)
     {
         if (isDead)
             return;
 
-        currentHealth -= amount;
+        int finalDamage = amount;
+
+        // If we have a shield and we're currently blocking, reduce damage
+        if (shieldBlock != null && shieldBlock.IsBlocking())
+        {
+            float reducePercent = Mathf.Clamp(shieldBlock.GetDamageReductionPercent(), 0f, 100f);
+            float factor = 1f - (reducePercent / 100f);
+            finalDamage = Mathf.RoundToInt(amount * factor);
+
+            // Optional: log + VFX hook
+            shieldBlock.HandleDamageWithShield(amount);
+            Debug.Log(
+                $"[PlayerHealth] {name} blocked with shield. " +
+                $"Incoming={amount}, Final={finalDamage}, HP before={currentHealth}"
+            );
+        }
+
+        currentHealth -= finalDamage;
         currentHealth = Mathf.Max(0, currentHealth);
-        Debug.Log($"[PlayerHealth] {name} took {amount} damage. HP = {currentHealth}/{maxHealth}");
+
+        Debug.Log($"[PlayerHealth] {name} took {finalDamage} damage. HP = {currentHealth}/{maxHealth}");
 
         if (currentHealth <= 0)
         {
@@ -163,7 +183,6 @@ public class PlayerHealth : MonoBehaviour
     // -----------------------------------------------------------------------
     public void RespawnAt(Transform spawnPoint)
     {
-        // Turn off CC while we teleport
         if (characterController != null)
             characterController.enabled = false;
 
@@ -181,7 +200,6 @@ public class PlayerHealth : MonoBehaviour
         if (characterController != null)
             characterController.enabled = true;
 
-        // Reset state
         currentHealth = maxHealth;
         isDead = false;
 
@@ -189,7 +207,7 @@ public class PlayerHealth : MonoBehaviour
             animator.SetBool(deathBoolName, false);
 
         if (animator != null)
-            animator.Play("idle", 0, 0f); // change "idle" if your idle state has a different name
+            animator.Play("idle", 0, 0f); // change if your idle state has a different name
 
         if (controller != null)
             controller.enabled = true;
@@ -200,4 +218,3 @@ public class PlayerHealth : MonoBehaviour
         Debug.Log($"[PlayerHealth] {name} respawned.");
     }
 }
-

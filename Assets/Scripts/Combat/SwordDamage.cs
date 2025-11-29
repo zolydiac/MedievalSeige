@@ -10,6 +10,11 @@ public class SwordDamage : MonoBehaviour
     [Header("Debug")]
     [SerializeField] private bool showDebugLogs = false;
 
+    [Header("Audio")]
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip swingClip;   // played when swing starts
+    [SerializeField] private AudioClip hitClip;     // played when we actually hit someone
+
     private bool damageActive = false;
     private Collider swordCollider;
 
@@ -32,9 +37,15 @@ public class SwordDamage : MonoBehaviour
         ownerHealth = GetComponentInParent<PlayerHealth>();
         if (ownerHealth == null)
         {
-            Debug.LogWarning($"{name}: Could not find PlayerHealth on parent. " +
-                             "Sword will still work, but self-hit prevention is disabled.");
+            Debug.LogWarning(
+                $"{name}: Could not find PlayerHealth on parent. " +
+                "Sword will still work, but self-hit prevention is disabled."
+            );
         }
+
+        // Auto-grab AudioSource if not assigned
+        if (audioSource == null)
+            audioSource = GetComponent<AudioSource>();
     }
 
     // Called by animation event at start of hit window
@@ -45,6 +56,10 @@ public class SwordDamage : MonoBehaviour
 
         if (showDebugLogs)
             Debug.Log($"{name}: Damage ENABLED — starting new swing window.");
+
+        // PLAY SWING SOUND HERE – only when hitbox turns on
+        if (audioSource != null && swingClip != null)
+            audioSource.PlayOneShot(swingClip);
     }
 
     // Called by animation event at end of hit window
@@ -78,6 +93,10 @@ public class SwordDamage : MonoBehaviour
 
         // Apply damage
         target.TakeDamage(damage);
+
+        // PLAY HIT SOUND ONLY ON ACTUAL HIT
+        if (audioSource != null && hitClip != null)
+            audioSource.PlayOneShot(hitClip);
 
         if (showDebugLogs)
             Debug.Log($"{name}: Hit {target.name} for {damage} damage.");

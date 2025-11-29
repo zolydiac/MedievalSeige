@@ -1,17 +1,21 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(CharacterController))]
 public class SplitScreenFPSController : MonoBehaviour
 {
-    private enum WeaponType { SwordShield, Bow }
+    private enum WeaponType { SwordShield, Bow, Chalk }
 
     [Header("Player Setup")]
     [SerializeField] private int playerNumber = 1;
     [SerializeField] private PlayerInput playerInput;
+    [SerializeField] private bool isAttacker = true; // true = attacker, false = defender
+
+    // Expose player number to other systems (RoundManager, UI, etc.)
+    public int PlayerNumber => playerNumber;
 
     [Header("UI References")]
-    [SerializeField] private WeaponHotbarUI hotbarUI; // NEW: Reference to hotbar UI
+    [SerializeField] private WeaponHotbarUI hotbarUI;
 
     [Header("Movement Settings")]
     [SerializeField] private float walkSpeed = 6f;
@@ -75,6 +79,10 @@ public class SplitScreenFPSController : MonoBehaviour
     [SerializeField] private GameObject bowInHandRoot;
     [SerializeField] private GameObject bowOnBackRoot;
 
+    [Header("Chalk / Spell References (attacker only)")]
+    [SerializeField] private GameObject chalkInHandRoot;
+    [SerializeField] private GameObject chalkOnBackRoot;
+
     // Input state
     private Vector2 moveInput;
     private Vector2 lookInput;
@@ -125,16 +133,32 @@ public class SplitScreenFPSController : MonoBehaviour
         if (playerInput == null)
             playerInput = GetComponent<PlayerInput>();
 
+        // INPUT MAP SETUP
         if (playerInput != null)
         {
-            string mapName = playerNumber == 1 ? "Player1" : "Player2";
-            playerInput.SwitchCurrentActionMap(mapName);
+            if (!playerInput.enabled)
+                playerInput.enabled = true;
 
-            if (playerNumber == 2 && Gamepad.current != null)
-                playerInput.SwitchCurrentControlScheme("Gamepad", Gamepad.current);
+            string mapName = (playerNumber == 1) ? "Player1" : "Player2";
 
-            playerInput.currentActionMap?.Enable();
-            isUsingGamepad = playerInput.currentControlScheme == "Gamepad";
+            try
+            {
+                playerInput.SwitchCurrentActionMap(mapName);
+                playerInput.currentActionMap?.Enable();
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning(
+                    $"[SplitScreenFPSController] P{playerNumber} failed to switch to map '{mapName}': {e.Message}");
+            }
+
+            // P1: KB+M, P2: gamepad
+            isUsingGamepad = (playerNumber == 2);
+            Debug.Log($"[SplitScreenFPSController] P{playerNumber} usingGamepad={isUsingGamepad}, map={mapName}");
+        }
+        else
+        {
+            isUsingGamepad = (playerNumber == 2);
         }
 
         if (playerNumber == 1)
@@ -156,16 +180,27 @@ public class SplitScreenFPSController : MonoBehaviour
         if (cameraTransform != null && !isThirdPerson)
             cameraTransform.localPosition = firstPersonOffset;
 
-        // Get weapon-related components
+        // Weapon-related components
         shieldBlock = GetComponentInChildren<ShieldBlock>();
         bowController = GetComponentInChildren<BowController>();
 
-        // Ensure we start in sword+shield mode
+        // Start in sword+shield mode
         EquipWeapon(WeaponType.SwordShield);
+
+        // >>> APPLY SETTINGS FROM GameSettings <<<
+        if (GameSettings.Instance != null)
+        {
+            mouseSensitivity = GameSettings.Instance.MouseSensitivity;
+            Debug.Log($"[SplitScreenFPSController] P{playerNumber} using mouseSensitivity={mouseSensitivity} from GameSettings.");
+        }
     }
 
     void Update()
     {
+        // If game is paused, ignore movement & look
+        if (PauseMenu.Instance != null && PauseMenu.Instance.IsPaused)
+            return;
+
         wasGrounded = isGrounded;
 
         GroundCheck();
@@ -197,6 +232,15 @@ public class SplitScreenFPSController : MonoBehaviour
             jumpRequested = true;
     }
 
+    public void OnPause(InputValue value)
+    {
+        bool pressed = isUsingGamepad ? value.Get<float>() > 0.5f : value.isPressed;
+        if (!pressed) return;
+
+        if (PauseMenu.Instance != null)
+            PauseMenu.Instance.TogglePause();
+    }
+
     public void OnSprint(InputValue value)
     {
         sprintPressed = isUsingGamepad ? value.Get<float>() > 0.5f : value.isPressed;
@@ -214,12 +258,40 @@ public class SplitScreenFPSController : MonoBehaviour
         EquipWeapon(WeaponType.Bow);
     }
 
+    public void OnSelectChalk(InputValue value)
+    {
+        if (!value.isPressed) return;
+
+        // Only attacker uses chalk slot
+        if (!isAttacker) return;
+
+        EquipWeapon(WeaponType.Chalk);
+    }
+
     public void OnCycleWeapon(InputValue value)
     {
         if (!value.isPressed) return;
 
-        WeaponType nextWeapon =
-            (currentWeapon == WeaponType.SwordShield) ? WeaponType.Bow : WeaponType.SwordShield;
+        WeaponType nextWeapon;
+
+        if (isAttacker)
+        {
+            // Cycle through 3 weapons
+            switch (currentWeapon)
+            {
+                case WeaponType.SwordShield: nextWeapon = WeaponType.Bow; break;
+                case WeaponType.Bow: nextWeapon = WeaponType.Chalk; break;
+                case WeaponType.Chalk: nextWeapon = WeaponType.SwordShield; break;
+                default: nextWeapon = WeaponType.SwordShield; break;
+            }
+        }
+        else
+        {
+            // Defender: only sword+shield and bow
+            nextWeapon = (currentWeapon == WeaponType.SwordShield)
+                ? WeaponType.Bow
+                : WeaponType.SwordShield;
+        }
 
         EquipWeapon(nextWeapon);
     }
@@ -248,7 +320,7 @@ public class SplitScreenFPSController : MonoBehaviour
                 Invoke(nameof(EndAttack), animLength);
             }
         }
-        else // Bow mode
+        else if (currentWeapon == WeaponType.Bow)
         {
             if (!pressed) return;
             if (bowController == null) return;
@@ -256,6 +328,7 @@ public class SplitScreenFPSController : MonoBehaviour
 
             bowController.QuickShot();
         }
+        // WeaponType.Chalk uses Interact, not Attack
     }
 
     private void EndAttack()
@@ -267,7 +340,8 @@ public class SplitScreenFPSController : MonoBehaviour
     {
         bool pressed = isUsingGamepad ? value.Get<float>() > 0.5f : value.isPressed;
 
-        if (currentWeapon == WeaponType.Bow)
+        // Only sword+shield can block
+        if (currentWeapon != WeaponType.SwordShield)
             pressed = false;
 
         if (isAttacking && !canBlockWhileAttacking)
@@ -286,6 +360,40 @@ public class SplitScreenFPSController : MonoBehaviour
     {
         if (value.isPressed)
             isThirdPerson = !isThirdPerson;
+    }
+
+    /// <summary>
+    /// Interact is used for planting (chalk) and defusing (both players).
+    /// </summary>
+    public void OnInteract(InputValue value)
+    {
+        bool pressed = isUsingGamepad ? value.Get<float>() > 0.5f : value.isPressed;
+
+        if (pressed)
+        {
+            // 1) Attacker + chalk selected → try plant bomb
+            if (isAttacker && currentWeapon == WeaponType.Chalk && RoundManager.Instance != null)
+            {
+                RoundManager.Instance.TryPlantBomb(this);
+                return;
+            }
+
+            // 2) Otherwise, try to start defusing any active bomb
+            BombController bomb = FindObjectOfType<BombController>();
+            if (bomb != null)
+            {
+                bomb.StartDefuse(this);
+            }
+        }
+        else
+        {
+            // Button released → cancel defuse if any
+            BombController bomb = FindObjectOfType<BombController>();
+            if (bomb != null)
+            {
+                bomb.StopDefuse(this);
+            }
+        }
     }
 
     // ---------------- GROUND / JUMP / GRAVITY ----------------
@@ -492,6 +600,7 @@ public class SplitScreenFPSController : MonoBehaviour
 
         bool swordMode = (weapon == WeaponType.SwordShield);
         bool bowMode = (weapon == WeaponType.Bow);
+        bool chalkMode = (weapon == WeaponType.Chalk);
 
         // Sword visibility
         if (swordInHandRoot != null) swordInHandRoot.SetActive(swordMode);
@@ -504,6 +613,10 @@ public class SplitScreenFPSController : MonoBehaviour
         // Bow visibility
         if (bowInHandRoot != null) bowInHandRoot.SetActive(bowMode);
         if (bowOnBackRoot != null) bowOnBackRoot.SetActive(!bowMode);
+
+        // Chalk visibility (only really used for attacker)
+        if (chalkInHandRoot != null) chalkInHandRoot.SetActive(chalkMode && isAttacker);
+        if (chalkOnBackRoot != null) chalkOnBackRoot.SetActive(!chalkMode && isAttacker);
 
         // Shield behaviour
         if (shieldBlock != null)
@@ -532,11 +645,46 @@ public class SplitScreenFPSController : MonoBehaviour
             animator.SetBool("IsAiming", false);
         }
 
-        // NEW: Update hotbar UI
+        // Hotbar UI (0 = sword, 1 = bow, 2 = chalk)
         if (hotbarUI != null)
         {
-            int weaponIndex = (weapon == WeaponType.SwordShield) ? 0 : 1;
+            int weaponIndex = weapon switch
+            {
+                WeaponType.SwordShield => 0,
+                WeaponType.Bow => 1,
+                WeaponType.Chalk => 2,
+                _ => 0
+            };
             hotbarUI.SelectWeapon(weaponIndex);
+        }
+    }
+
+    // ---------------- SETTINGS HELPERS ----------------
+
+    public void SetMouseSensitivity(float value)
+    {
+        mouseSensitivity = value;
+    }
+
+    public void SetGamepadSensitivity(float value)
+    {
+        gamepadSensitivity = value;
+    }
+
+    // ---------------- ENABLE / DISABLE INPUT ----------------
+
+    public void SetInputEnabled(bool enabled)
+    {
+        if (playerInput != null)
+            playerInput.enabled = enabled;
+
+        if (!enabled)
+        {
+            moveInput = Vector2.zero;
+            lookInput = Vector2.zero;
+            sprintPressed = false;
+            jumpRequested = false;
+            currentMoveVelocity = Vector3.zero;
         }
     }
 

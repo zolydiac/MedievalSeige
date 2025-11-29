@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(Rigidbody), typeof(Collider))]
 public class Arrow : MonoBehaviour
 {
     [Header("Arrow Settings")]
@@ -14,26 +14,28 @@ public class Arrow : MonoBehaviour
     [SerializeField] private AudioClip flySound;
 
     private Rigidbody rb;
-    private bool hasHit = false;
+    private Collider col;
+    private bool hasHit = false;            // arrow has collided with *anything*
+    private bool hasDealtDamage = false;    // arrow has already damaged a PlayerHealth
     private int damage = 25;
     private AudioSource audioSource;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
+        col = GetComponent<Collider>();
         audioSource = GetComponent<AudioSource>();
 
-        // IMPORTANT: make sure physics is actually active
         rb.isKinematic = false;
         rb.useGravity = true;
     }
 
     void Start()
     {
-        // Lifetime
+        // lifetime
         Destroy(gameObject, lifetime);
 
-        // Play flying sound
+        // play flying sound once
         if (flySound != null && audioSource != null)
             audioSource.PlayOneShot(flySound);
     }
@@ -63,16 +65,16 @@ public class Arrow : MonoBehaviour
 
         rb.isKinematic = false;
         rb.useGravity = true;
-
-        // IMPORTANT: use Rigidbody.velocity, not linearVelocity
         rb.linearVelocity = direction.normalized * speed;
     }
 
     void OnCollisionEnter(Collision collision)
     {
+        // only handle the *first* collision
         if (hasHit) return;
         hasHit = true;
 
+        // stop physics
         if (rb != null)
         {
             rb.linearVelocity = Vector3.zero;
@@ -85,26 +87,39 @@ public class Arrow : MonoBehaviour
         if (stickToSurface)
             StickToSurface(collision);
         else
+        {
+            // disable collider anyway so we never re-collide
+            if (col != null)
+                col.enabled = false;
+
             Destroy(gameObject, 0.1f);
+        }
     }
 
     void HandleHit(Collision collision)
     {
-        if (hitEffectPrefab != null)
+        // spawn hit FX
+        if (hitEffectPrefab != null && collision.contactCount > 0)
         {
             ContactPoint contact = collision.contacts[0];
             var effect = Instantiate(hitEffectPrefab, contact.point, Quaternion.LookRotation(contact.normal));
             Destroy(effect, 2f);
         }
 
+        // play hit sound
         if (hitSound != null && audioSource != null)
             audioSource.PlayOneShot(hitSound);
+
+        // if we already damaged someone, don't do it again
+        if (hasDealtDamage)
+            return;
 
         GameObject hitObject = collision.gameObject;
 
         PlayerHealth health = hitObject.GetComponentInParent<PlayerHealth>();
         if (health != null)
         {
+            hasDealtDamage = true;  // lock it here
             health.TakeDamage(damage);
             Debug.Log($"[Arrow] Hit {hitObject.name} for {damage} damage");
         }
@@ -112,14 +127,17 @@ public class Arrow : MonoBehaviour
 
     void StickToSurface(Collision collision)
     {
+        // parent to whatever we hit so it moves with them
         transform.SetParent(collision.transform);
 
-        ContactPoint contact = collision.contacts[0];
-        transform.position = contact.point - transform.forward * stickDepth;
+        if (collision.contactCount > 0)
+        {
+            ContactPoint contact = collision.contacts[0];
+            transform.position = contact.point - transform.forward * stickDepth;
+        }
 
-        Collider col = GetComponent<Collider>();
+        // absolutely disable collider so it can't keep colliding
         if (col != null)
             col.enabled = false;
     }
 }
-

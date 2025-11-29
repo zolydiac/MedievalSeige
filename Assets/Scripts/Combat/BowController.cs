@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class BowController : MonoBehaviour
@@ -14,26 +15,37 @@ public class BowController : MonoBehaviour
     [SerializeField] private Animator animator;
     [SerializeField] private GameObject bowVisual;
     [SerializeField] private LineRenderer trajectoryLine; // optional
+    [SerializeField] private Transform aimTransform;
 
     [Header("Ammo")]
     [SerializeField] private int maxArrows = 20;
     private int currentArrows;
 
+    [Header("Timing")]
+    [SerializeField] private float shotDelay = 1.1f;   // delay between click and arrow firing
+    [SerializeField] private float shotCooldown = 3f;  // cooldown after each shot
+
+    [Header("Audio")]
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip drawClip;
+    [SerializeField] private AudioClip shootClip;
+
     // State
     private bool isEquipped = false;
     private bool isDrawing = false;
+    private bool isOnCooldown = false;
+
     private float drawStartTime = 0f;
     private float currentDrawTime = 0f;
 
-    // Animator params (rename to match your Animator if needed)
+    // Animator params
     private readonly int aimHash = Animator.StringToHash("IsAiming");
     private readonly int drawHash = Animator.StringToHash("DrawAmount");
     private readonly int shootHash = Animator.StringToHash("Shoot");
 
-    // You said you went with "equipbow" and "stowbow" – use those names:
+    // You said you went with "equipbow" and "stowbow"
     private readonly int equipHash = Animator.StringToHash("equipbow");
     private readonly int stowHash = Animator.StringToHash("stowbow");
-
 
     void Start()
     {
@@ -42,14 +54,14 @@ public class BowController : MonoBehaviour
         if (animator == null)
             animator = GetComponentInParent<Animator>();
 
-        // We DON'T auto-create arrowSpawnPoint here because we're in split-screen.
-        // You will assign a child of the player camera in the inspector.
-
         if (trajectoryLine != null)
             trajectoryLine.enabled = false;
 
         if (bowVisual != null)
             bowVisual.SetActive(isEquipped);
+
+        if (audioSource == null)
+            audioSource = GetComponent<AudioSource>();
     }
 
     void Update()
@@ -68,6 +80,7 @@ public class BowController : MonoBehaviour
 
         if (!isEquipped)
         {
+            // Cancel drawing state
             isDrawing = false;
             currentDrawTime = 0f;
 
@@ -90,11 +103,10 @@ public class BowController : MonoBehaviour
         }
     }
 
-
     public bool IsEquipped() => isEquipped;
     public bool IsDrawing() => isDrawing;
 
-    // Called by controller when Attack is PRESSED in bow mode
+    // -------- OPTIONAL HOLD API (kept for flexibility) --------
     public void StartDrawing()
     {
         if (!isEquipped || isDrawing || currentArrows <= 0)
@@ -115,6 +127,10 @@ public class BowController : MonoBehaviour
 
         if (animator != null)
             animator.SetBool(aimHash, true);
+
+        // play draw SFX
+        if (audioSource != null && drawClip != null)
+            audioSource.PlayOneShot(drawClip);
     }
 
     public void ReleaseArrow()
@@ -141,11 +157,107 @@ public class BowController : MonoBehaviour
             animator.SetFloat(drawHash, 0f);
         }
 
+        // shoot SFX
+        if (audioSource != null && shootClip != null)
+            audioSource.PlayOneShot(shootClip);
+
         isDrawing = false;
         currentDrawTime = 0f;
     }
 
+    // -------- Your press-once shooting with delay + cooldown --------
 
+    public void QuickShot()
+    {
+        if (!isEquipped)
+        {
+            Debug.Log($"[BowController {name}] QuickShot blocked: not equipped");
+            return;
+        }
+
+        if (currentArrows <= 0)
+        {
+            Debug.Log($"[BowController {name}] QuickShot blocked: no arrows left");
+            return;
+        }
+
+        if (arrowSpawnPoint == null)
+        {
+            Debug.LogWarning("[BowController] QuickShot: Arrow spawn point not assigned!");
+            return;
+        }
+
+        if (isDrawing)
+        {
+            Debug.Log($"[BowController {name}] QuickShot blocked: already drawing");
+            return;
+        }
+
+        if (isOnCooldown)
+        {
+            Debug.Log($"[BowController {name}] QuickShot blocked: on cooldown");
+            return;
+        }
+
+        // Start "drawing" immediately on click
+        isDrawing = true;
+        drawStartTime = Time.time;
+
+        if (animator != null)
+        {
+            animator.SetBool(aimHash, true);
+            animator.SetTrigger(shootHash);   // start shoot animation
+        }
+
+        // NOTE: no drawClip here anymore
+
+        StartCoroutine(ShotRoutine());
+    }
+
+
+    private IEnumerator ShotRoutine()
+    {
+        // Wait for the part of the animation where the arrow should leave the bow
+        yield return new WaitForSeconds(shotDelay);   // e.g. 1.1f
+
+        // If bow got unequipped or drawing was cancelled mid-way, abort
+        if (!isEquipped || !isDrawing)
+        {
+            isDrawing = false;
+            currentDrawTime = 0f;
+            yield break;
+        }
+
+        // Compute speed based on how long we've been drawing (or clamp to max)
+        currentDrawTime = Time.time - drawStartTime;
+        float drawPercent = Mathf.Clamp01(currentDrawTime / maxDrawTime);
+        float arrowSpeed = Mathf.Lerp(minArrowSpeed, maxArrowSpeed, drawPercent);
+
+        // Actually spawn + launch the arrow
+        SpawnArrow(arrowSpeed);
+        currentArrows--;
+
+        // shoot SFX at release
+        if (audioSource != null && shootClip != null)
+            audioSource.PlayOneShot(shootClip);
+
+        // End drawing / aim state
+        if (animator != null)
+        {
+            animator.SetBool(aimHash, false);
+            animator.SetFloat(drawHash, 0f);
+        }
+
+        isDrawing = false;
+        currentDrawTime = 0f;
+
+        // Start cooldown AFTER the shot
+        isOnCooldown = true;
+        yield return new WaitForSeconds(shotCooldown);   // e.g. 3f
+        isOnCooldown = false;
+    }
+
+    // -------- Internal helpers --------
 
     void UpdateDrawAmount()
     {
@@ -174,16 +286,21 @@ public class BowController : MonoBehaviour
 
         GameObject arrow = Instantiate(arrowPrefab, arrowSpawnPoint.position, arrowSpawnPoint.rotation);
 
+        // Decide shoot direction: use camera if assigned, otherwise spawn forward
+        Vector3 shootDir = (aimTransform != null)
+            ? aimTransform.forward
+            : arrowSpawnPoint.forward;
+
         Arrow arrowScript = arrow.GetComponent<Arrow>();
         if (arrowScript != null)
         {
-            arrowScript.Launch(arrowSpawnPoint.forward, speed, arrowDamage);
+            arrowScript.Launch(shootDir, speed, arrowDamage);
         }
         else
         {
             Rigidbody rb = arrow.GetComponent<Rigidbody>();
             if (rb != null)
-                rb.linearVelocity = arrowSpawnPoint.forward * speed;
+                rb.linearVelocity = shootDir * speed;
         }
     }
 
@@ -215,47 +332,6 @@ public class BowController : MonoBehaviour
     public void AddArrows(int amount)
     {
         currentArrows = Mathf.Min(maxArrows, currentArrows + amount);
-    }
-
-    public void QuickShot()
-    {
-        if (!isEquipped)
-        {
-            Debug.Log($"[BowController {name}] QuickShot blocked: not equipped");
-            return;
-        }
-
-        if (currentArrows <= 0)
-        {
-            Debug.Log($"[BowController {name}] QuickShot blocked: no arrows left");
-            return;
-        }
-
-        if (arrowSpawnPoint == null)
-        {
-            Debug.LogWarning("[BowController] QuickShot: Arrow spawn point not assigned!");
-            return;
-        }
-
-        // For simple press-to-shoot, just use max speed (or tweak as you like)
-        float arrowSpeed = maxArrowSpeed;
-
-        Debug.Log($"[BowController {name}] QuickShot fired, speed={arrowSpeed}");
-
-        SpawnArrow(arrowSpeed);
-        currentArrows--;
-
-        // Play shoot animation
-        if (animator != null)
-        {
-            animator.SetTrigger(shootHash);
-            animator.SetBool(aimHash, false);
-            animator.SetFloat(drawHash, 0f);
-        }
-
-        // Reset any draw state just in case
-        isDrawing = false;
-        currentDrawTime = 0f;
     }
 
     public int GetCurrentArrows() => currentArrows;
