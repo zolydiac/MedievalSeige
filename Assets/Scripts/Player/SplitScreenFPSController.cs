@@ -123,6 +123,9 @@ public class SplitScreenFPSController : MonoBehaviour
     private ShieldBlock shieldBlock;
     private BowController bowController;
 
+    // NEW: internal flag instead of disabling PlayerInput
+    private bool inputEnabled = true;
+
     void Start()
     {
         controller = GetComponent<CharacterController>();
@@ -133,9 +136,9 @@ public class SplitScreenFPSController : MonoBehaviour
         if (playerInput == null)
             playerInput = GetComponent<PlayerInput>();
 
-        // INPUT MAP SETUP
         if (playerInput != null)
         {
+            // Make sure the PlayerInput component itself is enabled
             if (!playerInput.enabled)
                 playerInput.enabled = true;
 
@@ -143,6 +146,7 @@ public class SplitScreenFPSController : MonoBehaviour
 
             try
             {
+                // Ensure we are on the correct action map
                 playerInput.SwitchCurrentActionMap(mapName);
                 playerInput.currentActionMap?.Enable();
             }
@@ -152,13 +156,21 @@ public class SplitScreenFPSController : MonoBehaviour
                     $"[SplitScreenFPSController] P{playerNumber} failed to switch to map '{mapName}': {e.Message}");
             }
 
-            // P1: KB+M, P2: gamepad
+            // Hard-code: P1 uses mouse+keyboard, P2 uses gamepad
             isUsingGamepad = (playerNumber == 2);
+
             Debug.Log($"[SplitScreenFPSController] P{playerNumber} usingGamepad={isUsingGamepad}, map={mapName}");
         }
         else
         {
+            // Fallback: still assume P2 is gamepad
             isUsingGamepad = (playerNumber == 2);
+        }
+
+        // Apply saved sensitivity from GameSettings (if any)
+        if (GameSettings.Instance != null)
+        {
+            mouseSensitivity = GameSettings.Instance.MouseSensitivity;
         }
 
         if (playerNumber == 1)
@@ -180,27 +192,16 @@ public class SplitScreenFPSController : MonoBehaviour
         if (cameraTransform != null && !isThirdPerson)
             cameraTransform.localPosition = firstPersonOffset;
 
-        // Weapon-related components
+        // Get weapon-related components
         shieldBlock = GetComponentInChildren<ShieldBlock>();
         bowController = GetComponentInChildren<BowController>();
 
-        // Start in sword+shield mode
+        // Ensure we start in sword+shield mode
         EquipWeapon(WeaponType.SwordShield);
-
-        // >>> APPLY SETTINGS FROM GameSettings <<<
-        if (GameSettings.Instance != null)
-        {
-            mouseSensitivity = GameSettings.Instance.MouseSensitivity;
-            Debug.Log($"[SplitScreenFPSController] P{playerNumber} using mouseSensitivity={mouseSensitivity} from GameSettings.");
-        }
     }
 
     void Update()
     {
-        // If game is paused, ignore movement & look
-        if (PauseMenu.Instance != null && PauseMenu.Instance.IsPaused)
-            return;
-
         wasGrounded = isGrounded;
 
         GroundCheck();
@@ -222,11 +223,22 @@ public class SplitScreenFPSController : MonoBehaviour
 
     // ---------------- INPUT CALLBACKS ----------------
 
-    public void OnMove(InputValue value) => moveInput = value.Get<Vector2>();
-    public void OnLook(InputValue value) => lookInput = value.Get<Vector2>();
+    public void OnMove(InputValue value)
+    {
+        if (!inputEnabled) return;
+        moveInput = value.Get<Vector2>();
+    }
+
+    public void OnLook(InputValue value)
+    {
+        if (!inputEnabled) return;
+        lookInput = value.Get<Vector2>();
+    }
 
     public void OnJump(InputValue value)
     {
+        if (!inputEnabled) return;
+
         bool pressed = isUsingGamepad ? value.Get<float>() > 0.5f : value.isPressed;
         if (pressed)
             jumpRequested = true;
@@ -234,6 +246,7 @@ public class SplitScreenFPSController : MonoBehaviour
 
     public void OnPause(InputValue value)
     {
+        // Pause should ALWAYS work, even when input is locked by RoundManager
         bool pressed = isUsingGamepad ? value.Get<float>() > 0.5f : value.isPressed;
         if (!pressed) return;
 
@@ -243,23 +256,27 @@ public class SplitScreenFPSController : MonoBehaviour
 
     public void OnSprint(InputValue value)
     {
+        if (!inputEnabled) return;
         sprintPressed = isUsingGamepad ? value.Get<float>() > 0.5f : value.isPressed;
     }
 
     public void OnSelectSword(InputValue value)
     {
+        if (!inputEnabled) return;
         if (!value.isPressed) return;
         EquipWeapon(WeaponType.SwordShield);
     }
 
     public void OnSelectBow(InputValue value)
     {
+        if (!inputEnabled) return;
         if (!value.isPressed) return;
         EquipWeapon(WeaponType.Bow);
     }
 
     public void OnSelectChalk(InputValue value)
     {
+        if (!inputEnabled) return;
         if (!value.isPressed) return;
 
         // Only attacker uses chalk slot
@@ -270,6 +287,7 @@ public class SplitScreenFPSController : MonoBehaviour
 
     public void OnCycleWeapon(InputValue value)
     {
+        if (!inputEnabled) return;
         if (!value.isPressed) return;
 
         WeaponType nextWeapon;
@@ -298,6 +316,8 @@ public class SplitScreenFPSController : MonoBehaviour
 
     public void OnAttack(InputValue value)
     {
+        if (!inputEnabled) return;
+
         bool pressed = isUsingGamepad ? value.Get<float>() > 0.5f : value.isPressed;
 
         if (currentWeapon == WeaponType.SwordShield)
@@ -338,6 +358,8 @@ public class SplitScreenFPSController : MonoBehaviour
 
     public void OnBlock(InputValue value)
     {
+        if (!inputEnabled) return;
+
         bool pressed = isUsingGamepad ? value.Get<float>() > 0.5f : value.isPressed;
 
         // Only sword+shield can block
@@ -358,6 +380,7 @@ public class SplitScreenFPSController : MonoBehaviour
 
     public void OnToggleView(InputValue value)
     {
+        if (!inputEnabled) return;
         if (value.isPressed)
             isThirdPerson = !isThirdPerson;
     }
@@ -367,6 +390,8 @@ public class SplitScreenFPSController : MonoBehaviour
     /// </summary>
     public void OnInteract(InputValue value)
     {
+        if (!inputEnabled) return;
+
         bool pressed = isUsingGamepad ? value.Get<float>() > 0.5f : value.isPressed;
 
         if (pressed)
@@ -579,18 +604,18 @@ public class SplitScreenFPSController : MonoBehaviour
 
     void HandleCursor()
     {
-        if (Input.GetKeyDown(KeyCode.Escape))
-        {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-        }
+        // If the game is paused, let the UI own the cursor.
+        if (PauseMenu.Instance != null && PauseMenu.Instance.IsPaused)
+            return;
 
+        // Only lock the cursor when the player clicks into the game window
         if (Input.GetMouseButtonDown(0) && Cursor.lockState == CursorLockMode.None)
         {
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
     }
+
 
     // ---------------- WEAPON EQUIP LOGIC ----------------
 
@@ -671,15 +696,16 @@ public class SplitScreenFPSController : MonoBehaviour
         gamepadSensitivity = value;
     }
 
-    // ---------------- ENABLE / DISABLE INPUT ----------------
+    // ---------------- ENABLE / DISABLE INPUT (for RoundManager / Match Over) ----------------
 
     public void SetInputEnabled(bool enabled)
     {
-        if (playerInput != null)
-            playerInput.enabled = enabled;
+        // IMPORTANT: Do NOT toggle playerInput.enabled here (causes pairing errors).
+        inputEnabled = enabled;
 
         if (!enabled)
         {
+            // Clear current input so the player stops instantly
             moveInput = Vector2.zero;
             lookInput = Vector2.zero;
             sprintPressed = false;

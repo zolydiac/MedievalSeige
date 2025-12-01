@@ -23237,7 +23237,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   pauseRoot: {fileID: 1673689673}
-  mainMenuSceneName: MainMenu
 --- !u!4 &990173153
 Transform:
   m_ObjectHideFlags: 0

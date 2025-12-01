@@ -6,16 +6,11 @@ public class PauseMenu : MonoBehaviour
     public static PauseMenu Instance { get; private set; }
 
     [Header("UI Root")]
-    [SerializeField] private GameObject pauseRoot;   // assign PauseMenuCanvas here
-
-    [Header("Scenes")]
-    [SerializeField] private string mainMenuSceneName = "MainMenu";
+    [SerializeField] private GameObject pauseRoot;   // Assign your PauseMenuCanvas here
 
     private RoundManager roundManager;
     private bool isPaused = false;
-
-    // <-- This is what SplitScreenFPSController is looking for
-    public bool IsPaused => isPaused;
+    public bool IsPaused => isPaused;                // <-- used by the player controller
 
     private void Awake()
     {
@@ -30,41 +25,42 @@ public class PauseMenu : MonoBehaviour
     private void Start()
     {
         roundManager = RoundManager.Instance;
-
-        // start hidden & unpaused
         SetPaused(false, applyTimeScale: true);
     }
 
-    // Called from input (ESC / Start button)
+    // Called from input (ESC / Start)
     public void TogglePause()
     {
         SetPaused(!isPaused, applyTimeScale: true);
     }
 
-    // Resume button
+    // UI button: Resume
     public void OnResumeClicked()
     {
         SetPaused(false, applyTimeScale: true);
     }
 
-    // "Main Menu" button
+    // UI button: Main Menu
     public void OnMainMenuClicked()
     {
-        // unpause and go back to menu
-        SetPaused(false, applyTimeScale: true);
+        // Make sure time is running again
+        Time.timeScale = 1f;
 
-        // make mouse usable in the menu
+        isPaused = false;
+        if (pauseRoot != null)
+            pauseRoot.SetActive(false);
+
+        // Show mouse for main menu
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        SceneManager.LoadScene(mainMenuSceneName);
+        SceneManager.LoadScene("MainMenu");
     }
 
-    // "Quit Game" button (from pause menu)
-    public void OnQuitGameClicked()
+    // UI button: Quit game entirely
+    public void OnQuitClicked()
     {
-        SetPaused(false, applyTimeScale: true);
-
+        Time.timeScale = 1f;
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
 #else
@@ -85,7 +81,7 @@ public class PauseMenu : MonoBehaviour
         if (roundManager != null)
             roundManager.SetGamePaused(paused);
 
-        // handle cursor when pausing/unpausing
+        // Cursor behaviour while paused / unpaused
         if (paused)
         {
             Cursor.lockState = CursorLockMode.None;
@@ -93,7 +89,6 @@ public class PauseMenu : MonoBehaviour
         }
         else
         {
-            // when going back to gameplay, lock to centre again
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
