@@ -7,13 +7,19 @@ public class MainMenuUI : MonoBehaviour
     [Header("Panels")]
     [SerializeField] private GameObject mainPanel;
     [SerializeField] private GameObject optionsPanel;
+    [SerializeField] private GameObject modeSelectPanel; // NEW
 
     [Header("Buttons")]
     [SerializeField] private Button playButton;
     [SerializeField] private Button quitButton;
 
+    [Header("Mode Select Buttons")]
+    [SerializeField] private Button singleplayerButton; // NEW
+    [SerializeField] private Button multiplayerButton;  // NEW
+
     [Header("Scene Names")]
     [SerializeField] private string gameSceneName = "scene7";
+    [SerializeField] private string multiplayerSceneName = "MultiplayerScene"; // NEW
 
     private void Awake()
     {
@@ -24,25 +30,42 @@ public class MainMenuUI : MonoBehaviour
 
         if (quitButton != null)
             quitButton.onClick.AddListener(OnQuitClicked);
+
+        if (singleplayerButton != null)
+            singleplayerButton.onClick.AddListener(OnSingleplayerClicked);
+
+        if (multiplayerButton != null)
+            multiplayerButton.onClick.AddListener(OnMultiplayerClicked);
     }
 
-    // 🔹 NEW
     private void Start()
     {
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
     }
 
-
     private void ShowMainPanel()
     {
-        if (mainPanel != null) mainPanel.SetActive(true);
-        if (optionsPanel != null) optionsPanel.SetActive(false);
+        mainPanel?.SetActive(true);
+        optionsPanel?.SetActive(false);
+        modeSelectPanel?.SetActive(false); // NEW
     }
 
     public void OnPlayClicked()
     {
+        // Show mode select instead of loading immediately
+        mainPanel.SetActive(false);
+        modeSelectPanel.SetActive(true);
+    }
+
+    public void OnSingleplayerClicked()
+    {
         SceneManager.LoadScene(gameSceneName);
+    }
+
+    public void OnMultiplayerClicked()
+    {
+        SceneManager.LoadScene(multiplayerSceneName);
     }
 
     public void OnQuitClicked()
@@ -56,12 +79,18 @@ public class MainMenuUI : MonoBehaviour
 
     public void OnOptionsClicked()
     {
-        if (mainPanel != null) mainPanel.SetActive(false);
-        if (optionsPanel != null) optionsPanel.SetActive(true);
+        mainPanel?.SetActive(false);
+        optionsPanel?.SetActive(true);
     }
 
     public void OnBackFromOptions()
     {
         ShowMainPanel();
+    }
+
+    public void OnBackFromModeSelect()
+    {
+        modeSelectPanel?.SetActive(false);
+        mainPanel?.SetActive(true);
     }
 }
