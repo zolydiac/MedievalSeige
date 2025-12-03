@@ -19,6 +19,7 @@ public class SinglePlayerFPSController : MonoBehaviour
     [Header("Player Setup")]
     [SerializeField] private bool isAIControlled = false;
     [SerializeField] private bool isAttacker = true;       // keep this if your RoundManager/Bomb logic uses it
+    [SerializeField] private bool isDefender = false;
     [SerializeField] private int playerNumber = 1;         // 1 = human, 2 = AI (for your own logic)
     [SerializeField] private PlayerInput playerInput;
 
@@ -653,63 +654,84 @@ public class SinglePlayerFPSController : MonoBehaviour
     // ------------ AI LOGIC (NAVMESH + STATE MACHINE) ------------
 
     private void UpdateAI()
+{
+    if (!inputEnabled)
+        return;
+
+    // Ensure the agent is usable if we want NavMesh
+    if (useNavMesh && agent != null && !agent.enabled)
     {
-        if (!inputEnabled)
-            return;
+        agent.enabled = true;
+    }
 
-        // Ensure the agent is usable if we want NavMesh
-        if (useNavMesh && agent != null && !agent.enabled)
-        {
-            agent.enabled = true;
-        }
+    // Make sure we have a target
+    AcquireTargetIfNeeded();
 
-        // Make sure we have a target
-        AcquireTargetIfNeeded();
+    bool hasTarget = aiTarget != null;
 
-        bool hasTarget = aiTarget != null;
+    // Perception
+    bool canSeeTarget = hasTarget && CanSeeTarget(aiTarget);
+    float distanceToTarget = hasTarget
+        ? Vector3.Distance(transform.position, aiTarget.position)
+        : Mathf.Infinity;
 
-        // Perception
-        bool canSeeTarget = hasTarget && CanSeeTarget(aiTarget);
-        float distanceToTarget = hasTarget
-            ? Vector3.Distance(transform.position, aiTarget.position)
-            : Mathf.Infinity;
+    if (canSeeTarget)
+    {
+        timeSinceLastSeenTarget = 0f;
+        lastSeenTargetPosition = aiTarget.position;
+    }
+    else
+    {
+        timeSinceLastSeenTarget += Time.deltaTime;
+    }
 
-        if (canSeeTarget)
-        {
-            timeSinceLastSeenTarget = 0f;
-            lastSeenTargetPosition = aiTarget.position;
-        }
-        else
-        {
-            timeSinceLastSeenTarget += Time.deltaTime;
-        }
+    // ----------------- BOMB OBJECTIVE LOGIC -----------------
+    // By default, AI runs toward the player.
+    Vector3 navTargetPos = aiTarget != null ? aiTarget.position : transform.position;
 
-        // Decide state at intervals
-        if (Time.time >= aiNextDecisionTime)
-        {
-            aiNextDecisionTime = Time.time + aiDecisionInterval;
-            UpdateAIState(canSeeTarget, distanceToTarget);
-        }
+    BombController activeBomb = null;
+    bool bombIsActive = false;
 
-        // Run state behaviour
-        switch (currentAIState)
-        {
-            case AIState.Idle:
-                HandleIdleState();
-                break;
-            case AIState.Patrol:
-                HandlePatrolState();
-                break;
-            case AIState.Chase:
-                HandleChaseState(distanceToTarget);
-                break;
-            case AIState.Attack:
-                HandleAttackState(distanceToTarget, canSeeTarget);
-                break;
-            case AIState.Search:
-                HandleSearchState();
-                break;
-        }
+    if (RoundManager.Instance != null)
+    {
+        activeBomb = RoundManager.Instance.ActiveBomb;
+        bombIsActive = (activeBomb != null);
+    }
+
+    // If this AI is a defender and a bomb is active, override nav target to bomb site
+    if (isAIControlled && isDefender && bombIsActive)
+    {
+        navTargetPos = activeBomb.transform.position;
+    }
+    // --------------------------------------------------------
+
+    // Decide state at intervals
+    if (Time.time >= aiNextDecisionTime)
+    {
+        aiNextDecisionTime = Time.time + aiDecisionInterval;
+        UpdateAIState(canSeeTarget, distanceToTarget);
+    }
+
+    // Run state behaviour
+    switch (currentAIState)
+    {
+        case AIState.Idle:
+            HandleIdleState();
+            break;
+        case AIState.Patrol:
+            HandlePatrolState();
+            break;
+        case AIState.Chase:
+            HandleChaseState(distanceToTarget, navTargetPos, bombIsActive);
+            break;
+        case AIState.Attack:
+            HandleAttackState(distanceToTarget, canSeeTarget);
+            break;
+        case AIState.Search:
+            HandleSearchState(navTargetPos, bombIsActive);
+            break;
+    }
+
 
         // Use NavMeshAgent desired velocity to drive movement input
         if (useNavMesh && agent != null && agent.enabled)
@@ -729,51 +751,64 @@ public class SinglePlayerFPSController : MonoBehaviour
             }
         }
         else
+{
+    // Simple non-NavMesh fallback: move directly toward bomb or player
+    if (currentAIState == AIState.Chase)
+    {
+        Vector3 toTarget = (navTargetPos - transform.position);
+        toTarget.y = 0f;
+        if (toTarget.sqrMagnitude > 0.1f)
         {
-            // Simple non-NavMesh fallback: move directly toward target / search position
-            if (currentAIState == AIState.Chase && aiTarget != null)
-            {
-                Vector3 toTarget = (aiTarget.position - transform.position);
-                toTarget.y = 0f;
-                if (toTarget.sqrMagnitude > 0.1f)
-                {
-                    Vector3 local = transform.InverseTransformDirection(toTarget.normalized);
-                    moveInput = new Vector2(local.x, local.z);
-                    moveInput = Vector2.ClampMagnitude(moveInput, 1f);
-                    sprintPressed = true;
-                }
-            }
-            else if (currentAIState == AIState.Search)
-            {
-                Vector3 toLast = (lastSeenTargetPosition - transform.position);
-                toLast.y = 0f;
-                if (toLast.sqrMagnitude > 0.1f)
-                {
-                    Vector3 local = transform.InverseTransformDirection(toLast.normalized);
-                    moveInput = new Vector2(local.x, local.z);
-                    moveInput = Vector2.ClampMagnitude(moveInput, 1f);
-                    sprintPressed = false;
-                }
-                else
-                {
-                    moveInput = Vector2.zero;
-                }
-            }
-            else if (currentAIState != AIState.Attack)
-            {
-                moveInput = Vector2.zero;
-            }
+            Vector3 local = transform.InverseTransformDirection(toTarget.normalized);
+            moveInput = new Vector2(local.x, local.z);
+            moveInput = Vector2.ClampMagnitude(moveInput, 1f);
+            sprintPressed = true;
         }
+    }
+    else if (currentAIState == AIState.Search)
+    {
+        Vector3 toLast = (navTargetPos - transform.position);
+        toLast.y = 0f;
+        if (toLast.sqrMagnitude > 0.1f)
+        {
+            Vector3 local = transform.InverseTransformDirection(toLast.normalized);
+            moveInput = new Vector2(local.x, local.z);
+            moveInput = Vector2.ClampMagnitude(moveInput, 1f);
+            sprintPressed = false;
+        }
+        else
+        {
+            moveInput = Vector2.zero;
+        }
+    }
+    else if (currentAIState != AIState.Attack)
+    {
+        moveInput = Vector2.zero;
+    }
+}
+
 
         // Aim at the target if we have one
-        if (aiTarget != null)
+        // For attack we want precise aiming, otherwise just face where we move.
+        if (aiTarget != null && currentAIState == AIState.Attack)
         {
+            // Use camera-based aiming only while actually attacking
             AimAtTarget();
         }
         else
         {
+            // Don't drive rotation with lookInput outside of attack
             lookInput = Vector2.zero;
+
+            // Face movement direction to avoid sideways sliding
+            Vector3 horiz = new Vector3(currentMoveVelocity.x, 0f, currentMoveVelocity.z);
+            if (horiz.sqrMagnitude > 0.001f)
+            {
+                Quaternion targetRot = Quaternion.LookRotation(horiz.normalized);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, 10f * Time.deltaTime);
+            }
         }
+
 
         // Handle shield block timing for AI (end block when time is up)
         if (isBlocking && Time.time >= blockEndTime)
@@ -935,32 +970,33 @@ public class SinglePlayerFPSController : MonoBehaviour
         }
     }
 
-    private void HandleChaseState(float distanceToTarget)
+    private void HandleChaseState(float distanceToTarget, Vector3 navTargetPos, bool bombIsActive)
+{
+    if (!useNavMesh || agent == null || !agent.enabled)
     {
-        if (!useNavMesh || agent == null || !agent.enabled || aiTarget == null)
-        {
-            currentAIState = AIState.Idle;
-            return;
-        }
-
-        agent.isStopped = false;
-        agent.SetDestination(aiTarget.position);
-        sprintPressed = distanceToTarget > aiMeleeRange * 1.5f;
-
-        // Pick weapon based on distance
-        if (distanceToTarget <= aiMeleeRange * 1.2f)
-        {
-            EquipWeapon(WeaponType.SwordShield);
-        }
-        else if (distanceToTarget <= aiShootRange)
-        {
-            EquipWeapon(WeaponType.Bow);
-        }
-        else
-        {
-            EquipWeapon(WeaponType.SwordShield);
-        }
+        currentAIState = AIState.Idle;
+        return;
     }
+
+    agent.isStopped = false;
+    agent.SetDestination(navTargetPos);   // <-- bomb site OR player position
+    sprintPressed = distanceToTarget > aiMeleeRange * 1.5f;
+
+    // Pick weapon based on distance to the PLAYER (not the bomb)
+    if (distanceToTarget <= aiMeleeRange * 1.2f)
+    {
+        EquipWeapon(WeaponType.SwordShield);
+    }
+    else if (distanceToTarget <= aiShootRange)
+    {
+        EquipWeapon(WeaponType.Bow);
+    }
+    else
+    {
+        EquipWeapon(WeaponType.SwordShield);
+    }
+}
+
 
     private void HandleAttackState(float distanceToTarget, bool canSeeTarget)
     {
@@ -1012,58 +1048,36 @@ public class SinglePlayerFPSController : MonoBehaviour
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, 10f * Time.deltaTime);
         }
 
-        // --- Strafing & kiting movement during attack ---
         Vector3 desiredWorldMove = Vector3.zero;
 
-        // Periodically switch strafe side
-        if (Time.time >= nextStrafeChangeTime)
-        {
-            currentStrafeSign = Random.value < 0.5f ? -1 : 1; // left or right
-            nextStrafeChangeTime = Time.time + strafeChangeInterval;
-        }
+// Just move toward/away from target, no strafing
+Vector3 forwardToTarget = toTargetXZ.normalized;
 
-        Vector3 forwardToTarget = toTargetXZ.normalized;
-        Vector3 right = new Vector3(forwardToTarget.z, 0f, -forwardToTarget.x); // perpendicular
+if (useMelee)
+{
+    float desiredRadius = meleeStrafeRadius;
+    float currentRadius = toTargetXZ.magnitude;
 
-        if (useMelee)
-        {
-            // Circle around target + occasionally step in / out
-            float desiredRadius = meleeStrafeRadius;
-            float currentRadius = toTargetXZ.magnitude;
+    // Move in or out to hover around desired melee radius
+    if (currentRadius > desiredRadius + 0.3f)
+        desiredWorldMove += forwardToTarget;      // step in
+    else if (currentRadius < desiredRadius - 0.3f)
+        desiredWorldMove -= forwardToTarget;      // step out
 
-            // Move in or out a bit to hover around desired radius
-            if (currentRadius > desiredRadius + 0.3f)
-                desiredWorldMove += forwardToTarget;      // step in
-            else if (currentRadius < desiredRadius - 0.3f)
-                desiredWorldMove -= forwardToTarget;      // step out
+    TryStartBlockInMelee();
+}
+else if (useBow)
+{
+    // For now, play aggressive with bow:
+    // always move toward the player so the AI actually chases them.
+    desiredWorldMove += forwardToTarget;
 
-            // Add strafing around target
-            desiredWorldMove += right * currentStrafeSign * 0.8f;
+    // (Optional) if you want them to stop once they're quite close, you can do:
+    // if (distanceToTarget > aiMeleeRange * 1.2f)
+    //     desiredWorldMove += forwardToTarget;
+}
 
-            // Try blocking sometimes in melee
-            TryStartBlockInMelee();
-        }
-        else if (useBow)
-        {
-            // Kiting behaviour: stay in [bowPreferredMinDistance, bowPreferredMaxDistance]
-            float min = bowPreferredMinDistance;
-            float max = bowPreferredMaxDistance;
 
-            if (distanceToTarget < min * 0.9f)
-            {
-                // Too close: back off while maybe sprinting
-                desiredWorldMove -= forwardToTarget;
-                sprintPressed = true;
-            }
-            else if (distanceToTarget > max * 1.1f)
-            {
-                // Too far: step closer
-                desiredWorldMove += forwardToTarget;
-            }
-
-            // Add a bit of strafing even when using bow
-            desiredWorldMove += right * currentStrafeSign * 0.8f;
-        }
 
         // Convert desired world move to local moveInput
         if (desiredWorldMove.sqrMagnitude > 0.001f)
@@ -1101,19 +1115,31 @@ public class SinglePlayerFPSController : MonoBehaviour
         }
     }
 
-    private void HandleSearchState()
+    private void HandleSearchState(Vector3 navTargetPos, bool bombIsActive)
+{
+    if (!useNavMesh || agent == null || !agent.enabled)
     {
-        if (!useNavMesh || agent == null || !agent.enabled)
-        {
-            // Fallback search is handled in UpdateAI when !useNavMesh
-            sprintPressed = false;
-            return;
-        }
-
-        agent.isStopped = false;
-        agent.SetDestination(lastSeenTargetPosition);
+        // Fallback search is handled in UpdateAI when !useNavMesh
         sprintPressed = false;
+        return;
     }
+
+    agent.isStopped = false;
+
+    // If we’re a defender and the bomb is active, always go to the bomb site.
+    if (isDefender && bombIsActive && RoundManager.Instance != null && RoundManager.Instance.ActiveBomb != null)
+    {
+        agent.SetDestination(RoundManager.Instance.ActiveBomb.transform.position);
+    }
+    else
+    {
+        // Otherwise search around the last known / nav target position
+        agent.SetDestination(navTargetPos);
+    }
+
+    sprintPressed = false;
+}
+
 
     private void AimAtTarget()
     {

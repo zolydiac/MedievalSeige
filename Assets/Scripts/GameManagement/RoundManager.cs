@@ -59,7 +59,7 @@ public class RoundManager : MonoBehaviour
     public void SetGamePaused(bool paused)
     {
         gamePaused = paused;
-        // NOTE: we do NOT disable player input here – Time.timeScale handles the actual pause.
+        // NOTE: we do NOT disable player input here ï¿½ Time.timeScale handles the actual pause.
     }
     // ----------------------------------
 
@@ -72,6 +72,8 @@ public class RoundManager : MonoBehaviour
     private bool matchOver = false;
 
     private BombController activeBomb = null;
+
+    public BombController ActiveBomb => activeBomb;
 
     private Coroutine bannerHideRoutine;
 
@@ -217,13 +219,13 @@ public class RoundManager : MonoBehaviour
         {
             player1Score++;
             attackerWonRound = true;
-            message = "ATTACKER (PLAYER 1) WINS – BOMB EXPLODED!";
+            message = "ATTACKER (PLAYER 1) WINS ï¿½ BOMB EXPLODED!";
         }
         else
         {
             player2Score++;
             attackerWonRound = false;
-            message = "ATTACKER (PLAYER 2) WINS – BOMB EXPLODED!";
+            message = "ATTACKER (PLAYER 2) WINS ï¿½ BOMB EXPLODED!";
         }
 
         Debug.Log("[RoundManager] " + message);
@@ -245,8 +247,8 @@ public class RoundManager : MonoBehaviour
         bool p1WonRound = p1Defender;
 
         string message = p1Defender
-            ? "DEFENDER (PLAYER 1) WINS – BOMB DEFUSED!"
-            : "DEFENDER (PLAYER 2) WINS – BOMB DEFUSED!";
+            ? "DEFENDER (PLAYER 1) WINS ï¿½ BOMB DEFUSED!"
+            : "DEFENDER (PLAYER 2) WINS ï¿½ BOMB DEFUSED!";
 
         if (p1WonRound) player1Score++; else player2Score++;
 
@@ -386,7 +388,7 @@ public class RoundManager : MonoBehaviour
             return;
         }
 
-        // Not match over – schedule next round.
+        // Not match over ï¿½ schedule next round.
         StartCoroutine(RoundRestartRoutine());
     }
 
@@ -457,22 +459,33 @@ public class RoundManager : MonoBehaviour
     }
 
     private void SetPlayersInputEnabled(bool enabled)
+{
+    if (player1 != null)
     {
-        if (player1 != null)
-        {
-            var c1 = player1.GetComponent<SplitScreenFPSController>();
-            if (c1 != null) c1.SetInputEnabled(enabled);
-        }
+        // Multiplayer controller
+        var mp1 = player1.GetComponent<SplitScreenFPSController>();
+        if (mp1 != null) mp1.SetInputEnabled(enabled);
 
-        if (player2 != null)
-        {
-            var c2 = player2.GetComponent<SplitScreenFPSController>();
-            if (c2 != null) c2.SetInputEnabled(enabled);
-        }
+        // Singleplayer controller
+        var sp1 = player1.GetComponent<SinglePlayerFPSController>();
+        if (sp1 != null) sp1.SetInputEnabled(enabled);
     }
 
+    if (player2 != null)
+    {
+        // Multiplayer controller
+        var mp2 = player2.GetComponent<SplitScreenFPSController>();
+        if (mp2 != null) mp2.SetInputEnabled(enabled);
+
+        // Singleplayer controller (AI uses this!)
+        var sp2 = player2.GetComponent<SinglePlayerFPSController>();
+        if (sp2 != null) sp2.SetInputEnabled(enabled);
+    }
+}
+
+
     // ---------------------------------------------------------------------
-    // UPDATE – only used for restart key when match over
+    // UPDATE ï¿½ only used for restart key when match over
     // ---------------------------------------------------------------------
 
     private void Update()
