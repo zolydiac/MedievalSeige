@@ -5,21 +5,22 @@ using UnityEngine.UI;
 public class MainMenuUI : MonoBehaviour
 {
     [Header("Panels")]
-    [SerializeField] private GameObject mainPanel;
+    [SerializeField] private GameObject mainPanel;        // Play / Options / How To Play / Quit
     [SerializeField] private GameObject optionsPanel;
-    [SerializeField] private GameObject modeSelectPanel; // NEW
+    [SerializeField] private GameObject modeSelectPanel;
+    [SerializeField] private GameObject howToPlayPanel;   // NEW
 
     [Header("Buttons")]
     [SerializeField] private Button playButton;
     [SerializeField] private Button quitButton;
 
     [Header("Mode Select Buttons")]
-    [SerializeField] private Button singleplayerButton; // NEW
-    [SerializeField] private Button multiplayerButton;  // NEW
+    [SerializeField] private Button singleplayerButton;
+    [SerializeField] private Button multiplayerButton;
 
     [Header("Scene Names")]
     [SerializeField] private string gameSceneName = "scene7";
-    [SerializeField] private string multiplayerSceneName = "MultiplayerScene"; // NEW
+    [SerializeField] private string multiplayerSceneName = "MultiplayerScene";
 
     private void Awake()
     {
@@ -48,24 +49,35 @@ public class MainMenuUI : MonoBehaviour
     {
         mainPanel?.SetActive(true);
         optionsPanel?.SetActive(false);
-        modeSelectPanel?.SetActive(false); // NEW
+        modeSelectPanel?.SetActive(false);
+        howToPlayPanel?.SetActive(false);   // NEW
     }
+
+    // ---------- MAIN BUTTONS ----------
 
     public void OnPlayClicked()
     {
         // Show mode select instead of loading immediately
-        mainPanel.SetActive(false);
-        modeSelectPanel.SetActive(true);
+        if (mainPanel != null) mainPanel.SetActive(false);
+        if (modeSelectPanel != null) modeSelectPanel.SetActive(true);
+        if (optionsPanel != null) optionsPanel.SetActive(false);
+        if (howToPlayPanel != null) howToPlayPanel.SetActive(false);
     }
 
-    public void OnSingleplayerClicked()
+    public void OnOptionsClicked()
     {
-        SceneManager.LoadScene(gameSceneName);
+        if (mainPanel != null) mainPanel.SetActive(false);
+        if (optionsPanel != null) optionsPanel.SetActive(true);
+        if (modeSelectPanel != null) modeSelectPanel.SetActive(false);
+        if (howToPlayPanel != null) howToPlayPanel.SetActive(false);
     }
 
-    public void OnMultiplayerClicked()
+    public void OnHowToPlayClicked()   // NEW
     {
-        SceneManager.LoadScene(multiplayerSceneName);
+        if (mainPanel != null) mainPanel.SetActive(false);
+        if (optionsPanel != null) optionsPanel.SetActive(false);
+        if (modeSelectPanel != null) modeSelectPanel.SetActive(false);
+        if (howToPlayPanel != null) howToPlayPanel.SetActive(true);
     }
 
     public void OnQuitClicked()
@@ -77,11 +89,7 @@ public class MainMenuUI : MonoBehaviour
 #endif
     }
 
-    public void OnOptionsClicked()
-    {
-        mainPanel?.SetActive(false);
-        optionsPanel?.SetActive(true);
-    }
+    // ---------- SUB-PANELS BACK BUTTONS ----------
 
     public void OnBackFromOptions()
     {
@@ -90,7 +98,24 @@ public class MainMenuUI : MonoBehaviour
 
     public void OnBackFromModeSelect()
     {
-        modeSelectPanel?.SetActive(false);
-        mainPanel?.SetActive(true);
+        if (modeSelectPanel != null) modeSelectPanel.SetActive(false);
+        if (mainPanel != null) mainPanel.SetActive(true);
+    }
+
+    public void OnBackFromHowToPlay()   // NEW
+    {
+        ShowMainPanel();
+    }
+
+    // ---------- MODE SELECTION ----------
+
+    public void OnSingleplayerClicked()
+    {
+        SceneManager.LoadScene(gameSceneName);
+    }
+
+    public void OnMultiplayerClicked()
+    {
+        SceneManager.LoadScene(multiplayerSceneName);
     }
 }

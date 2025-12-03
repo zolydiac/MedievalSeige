@@ -6,11 +6,15 @@ public class PauseMenu : MonoBehaviour
     public static PauseMenu Instance { get; private set; }
 
     [Header("UI Root")]
-    [SerializeField] private GameObject pauseRoot;   // Assign your PauseMenuCanvas here
+    [SerializeField] private GameObject pauseRoot;   // Whole pause menu canvas/root
+
+    [Header("Panels")]
+    [SerializeField] private GameObject mainPausePanel;  // Panel with Resume/Main Menu/Quit/Controls
+    [SerializeField] private GameObject controlsPanel;   // Panel that shows controls text
 
     private RoundManager roundManager;
     private bool isPaused = false;
-    public bool IsPaused => isPaused;                // <-- used by the player controller
+    public bool IsPaused => isPaused;
 
     private void Awake()
     {
@@ -25,48 +29,60 @@ public class PauseMenu : MonoBehaviour
     private void Start()
     {
         roundManager = RoundManager.Instance;
+
+        // Start hidden & unpaused
         SetPaused(false, applyTimeScale: true);
     }
 
-    // Called from input (ESC / Start)
+    // Called from input (ESC / Start button)
     public void TogglePause()
     {
         SetPaused(!isPaused, applyTimeScale: true);
     }
 
-    // UI button: Resume
+    // ----- MAIN BUTTONS -----
+
     public void OnResumeClicked()
     {
         SetPaused(false, applyTimeScale: true);
     }
 
-    // UI button: Main Menu
     public void OnMainMenuClicked()
     {
-        // Make sure time is running again
-        Time.timeScale = 1f;
-
-        isPaused = false;
-        if (pauseRoot != null)
-            pauseRoot.SetActive(false);
-
-        // Show mouse for main menu
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-
+        // Unpause so timeScale goes back to 1
+        SetPaused(false, applyTimeScale: true);
         SceneManager.LoadScene("MainMenu");
     }
 
-    // UI button: Quit game entirely
     public void OnQuitClicked()
     {
-        Time.timeScale = 1f;
+        // Unpause just in case
+        SetPaused(false, applyTimeScale: true);
+
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
 #else
         Application.Quit();
 #endif
     }
+
+    // ----- CONTROLS PANEL BUTTONS -----
+
+    public void OnControlsClicked()
+    {
+        // Show controls panel, hide main pause buttons
+        if (mainPausePanel != null) mainPausePanel.SetActive(false);
+        if (controlsPanel != null) controlsPanel.SetActive(true);
+    }
+
+    public void OnBackFromControls()
+    {
+        // Go back to main pause panel
+        if (controlsPanel != null) controlsPanel.SetActive(false);
+        if (mainPausePanel != null) mainPausePanel.SetActive(true);
+    }
+
+    // ----- CORE PAUSE LOGIC -----
 
     private void SetPaused(bool paused, bool applyTimeScale)
     {
@@ -81,14 +97,19 @@ public class PauseMenu : MonoBehaviour
         if (roundManager != null)
             roundManager.SetGamePaused(paused);
 
-        // Cursor behaviour while paused / unpaused
+        // When we first pause, always start on the main pause panel
         if (paused)
         {
+            if (mainPausePanel != null) mainPausePanel.SetActive(true);
+            if (controlsPanel != null) controlsPanel.SetActive(false);
+
+            // IMPORTANT: free the mouse for UI
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
         }
         else
         {
+            // Back to gameplay: lock mouse again (P1 uses mouse)
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
