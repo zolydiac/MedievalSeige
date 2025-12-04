@@ -5,6 +5,9 @@ public class BombController : MonoBehaviour
     [Header("Bomb Settings")]
     [SerializeField] private float defuseRadius = 3f;
 
+    // Allow AI / other scripts to read the radius
+    public float DefuseRadius => defuseRadius;
+
     private float bombDuration;       // seconds until explosion
     private float defuseDuration;     // seconds holding to defuse
 
@@ -15,11 +18,11 @@ public class BombController : MonoBehaviour
 
     private RoundManager roundManager;
 
-    // Defuse state
-    private SplitScreenFPSController currentDefuser;
+    // Defuse state (now generic Transform so AI can use it too)
+    private Transform currentDefuser;
     private float defuseProgress;
 
-    // NEW: effects (audio + VFX)
+    // Effects (audio + VFX)
     private BombEffects bombEffects;
 
     // --------------------------------------------------------------------
@@ -45,7 +48,7 @@ public class BombController : MonoBehaviour
         defuseProgress = 0f;
         currentDefuser = null;
 
-        // NEW: start fuse hissing when bomb becomes active
+        // start fuse hissing when bomb becomes active
         if (bombEffects != null)
             bombEffects.StartFuse();
     }
@@ -72,13 +75,14 @@ public class BombController : MonoBehaviour
         // Handle defuse progress
         if (currentDefuser != null)
         {
-            float dist = Vector3.Distance(currentDefuser.transform.position, transform.position);
+            float dist = Vector3.Distance(currentDefuser.position, transform.position);
 
             // Moved out of range? cancel
             if (dist > defuseRadius)
             {
                 currentDefuser = null;
                 defuseProgress = 0f;
+                Debug.Log("[Bomb] Defuse cancelled (out of range)");
             }
             else
             {
@@ -92,28 +96,37 @@ public class BombController : MonoBehaviour
     }
 
     // --------------------------------------------------------------------
-    // DEFUSE API (called from player controller)
+    // DEFUSE API (generic Transform, used by players + AI)
     // --------------------------------------------------------------------
-    public void StartDefuse(SplitScreenFPSController player)
+    public void StartDefuse(Transform defuser)
     {
-        if (!IsActive) return;
+        if (!IsActive || defuser == null) return;
 
-        float dist = Vector3.Distance(player.transform.position, transform.position);
+        float dist = Vector3.Distance(defuser.position, transform.position);
         if (dist > defuseRadius) return;
 
-        // Only one defuser at a time
-        if (currentDefuser != null && currentDefuser != player)
+        // Nobody defusing yet -> start and reset progress ONCE
+        if (currentDefuser == null)
+        {
+            currentDefuser = defuser;
+            defuseProgress = 0f;
+            Debug.Log("[Bomb] Defuse started");
+        }
+        // Same defuser calling again -> ignore to avoid resetting progress
+        else if (currentDefuser == defuser)
+        {
             return;
-
-        currentDefuser = player;
-        defuseProgress = 0f;
-
-        Debug.Log("[Bomb] Defuse started");
+        }
+        // Someone else is already defusing -> ignore
+        else
+        {
+            return;
+        }
     }
 
-    public void StopDefuse(SplitScreenFPSController player)
+    public void StopDefuse(Transform defuser)
     {
-        if (currentDefuser == player)
+        if (currentDefuser == defuser)
         {
             currentDefuser = null;
             defuseProgress = 0f;
@@ -122,7 +135,20 @@ public class BombController : MonoBehaviour
     }
 
     // --------------------------------------------------------------------
-    // OUTCOMES
+    // Backwards-compatible wrappers for SplitScreenFPSController
+    // --------------------------------------------------------------------
+    public void StartDefuse(SplitScreenFPSController player)
+    {
+        if (player != null)
+            StartDefuse(player.transform);
+    }
+
+    public void StopDefuse(SplitScreenFPSController player)
+    {
+        if (player != null)
+            StopDefuse(player.transform);
+    }
+
     // --------------------------------------------------------------------
     private void Explode()
     {
@@ -136,16 +162,12 @@ public class BombController : MonoBehaviour
             roundManager.OnBombExploded();
 
         // Play VFX + SFX + physics
-        BombEffects bombEffects = GetComponent<BombEffects>();
         if (bombEffects != null)
             bombEffects.Detonate();
 
         // Now remove the bomb itself (mesh, collider etc.)
-        // VFX + explosion sound are on separate objects, so this is safe
         Destroy(gameObject, 0.05f);
     }
-
-
 
     private void Defuse()
     {
@@ -154,7 +176,7 @@ public class BombController : MonoBehaviour
         isDefused = true;
         Debug.Log("[Bomb] DEFUSED!");
 
-        // NEW: stop fuse hissing
+        // stop fuse hissing
         if (bombEffects != null)
             bombEffects.StopFuse();
 

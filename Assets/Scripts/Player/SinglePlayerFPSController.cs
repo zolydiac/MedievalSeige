@@ -815,6 +815,36 @@ public class SinglePlayerFPSController : MonoBehaviour
         {
             StopBlockAI();
         }
+
+            // Handle shield block timing for AI (end block when time is up)
+    if (isBlocking && Time.time >= blockEndTime)
+    {
+        StopBlockAI();
+    }
+
+    // --------------- SIMPLE BOMB DEFUSE BEHAVIOUR ----------------
+    // If this AI is a defender and the bomb is active, try to defuse it
+    if (isDefender && bombIsActive && activeBomb != null && activeBomb.IsActive)
+    {
+        float distToBomb = Vector3.Distance(transform.position, activeBomb.transform.position);
+
+        // When close enough, stop moving and hold defuse
+        if (distToBomb <= activeBomb.DefuseRadius * 0.9f)
+        {
+            // Stand still at the bomb
+            moveInput = Vector2.zero;
+            sprintPressed = false;
+
+            // Start / maintain defuse
+            activeBomb.StartDefuse(transform);
+        }
+        else
+        {
+            // Too far away -> make sure we are not listed as defuser
+            activeBomb.StopDefuse(transform);
+        }
+    }
+
     }
 
     /// <summary>
